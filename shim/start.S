@@ -1,6 +1,6 @@
 /*
- * sweet boot shim entry: arm64 Linux Image header so Qualcomm ABL treats
- * us like a kernel. ABL enters at EL1, MMU/D-cache off, x0 = DTB pointer.
+ * Odessa audit entry: ARM64 Linux Image header for Qualcomm ABL. This code
+ * assumes EL1, MMU/D-cache off, and x0 = DTB; verify that handoff on Odessa.
  */
 	.section .text.head, "ax"
 	.globl _head
@@ -39,20 +39,12 @@ _start:
 3:	wfe
 	b	3b
 
-/* PSCI CPU_ON target. x0 = context id = cpu index (1..7). */
+/* Keep an unexpectedly entered secondary CPU inert. */
 	.globl secondary_entry
 secondary_entry:
 	msr	daifset, #0xf
-	msr	spsel, #1
-	adr	x1, _sec_stacks
-	add	x1, x1, x0, lsl #12
-	add	x1, x1, #0x1000
-	mov	sp, x1
-	adr	x1, vectors
-	msr	vbar_el1, x1
-	isb
-	bl	secondary_main
-4:	wfe
+4:
+	wfe
 	b	4b
 
 /*
