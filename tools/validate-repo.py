@@ -173,6 +173,8 @@ def validate_odessa_profile(verbose=False):
     build_path = os.path.join(REPO_ROOT, 'shim/build.sh')
     with open(build_path, encoding='utf-8') as f:
         build_script = f.read()
+    if 'for f in start.S odessa_audit.c console.c' not in build_script or 'out/start.o out/odessa_audit.o out/console.o' not in build_script:
+        errors.append('Odessa audit image must compile only its dedicated entry point, startup, and console')
     boot_args = {
         'android_boot_header_version': (2, '--header_version 2'),
         'page_size': (4096, '--pagesize 4096'),
@@ -194,8 +196,10 @@ def validate_odessa_profile(verbose=False):
         errors.append('shim default cross-compiler must target bare-metal AArch64 ELF')
     if 'LD="${LD:-${CROSS_COMPILE}ld}"' not in build_script or '$LD -static -T shim.ld --build-id=none --gc-sections' not in build_script:
         errors.append('shim must link ELF objects with the target linker directly')
-    if '-ffunction-sections -fdata-sections' not in build_script or 'inherited loader/hardware/reset routine remains in the Odessa audit image' not in build_script:
-        errors.append('Odessa audit image must discard and reject unreferenced inherited hardware paths')
+    if '-ffunction-sections -fdata-sections' not in build_script or 'inherited loader/hardware/reset/secondary routine remains in the Odessa audit image' not in build_script:
+        errors.append('Odessa audit image must discard and reject unreferenced hardware and secondary-CPU paths')
+    if 'OBJDUMP="${OBJDUMP:-${CROSS_COMPILE}objdump}"' not in build_script or '[[:space:]]smc([[:space:]]|$)' not in build_script:
+        errors.append('Odessa audit image must reject retained PSCI/SMC instructions')
     if 'MKBOOTIMG="${MKBOOTIMG:-mkbootimg}"' not in build_script or '"$MKBOOTIMG" --header_version 2' not in build_script:
         errors.append('shim must allow an explicit Android mkbootimg executable')
     if 'validate-odessa-bootimg.py out/shim-boot.img out/Image out/ramdisk.bin "$ODESSA_DTB"' not in build_script:
