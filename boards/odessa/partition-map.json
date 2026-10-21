@@ -1,0 +1,59 @@
+{
+  "schema_version": 1,
+  "source": "Read-only ADB inventory of /dev/block/by-name and Linux block sysfs on XT2087-1, 2026-10-21",
+  "write_performed": false,
+  "sector_units": "start and size are 512-byte sectors as exposed by Linux block sysfs; confirm logical block addressing at the UFS driver before any future access",
+  "lun_count": 6,
+  "partitions": {
+    "lun0": { "device": "sda", "sectors": 32768, "logical_sector_bytes": 4096, "partitions": [] },
+    "lun1": {
+      "device": "sdb", "sectors": 247742464, "logical_sector_bytes": 4096,
+      "partitions": [
+        ["ssd", 256, 16], ["persist", 512, 65536], ["prodpersist", 66048, 16384],
+        ["misc", 82432, 2048], ["keystore", 84480, 1024], ["frp", 85504, 1024],
+        ["utags", 86528, 1024], ["utagsBackup", 87552, 1024], ["cid", 88576, 256],
+        ["metadata", 88832, 32768], ["kpan", 121600, 16384], ["sp", 137984, 16384],
+        ["carrier", 154368, 32768], ["modemst1", 187136, 4096], ["modemst2", 191232, 4096],
+        ["fsc", 195328, 256], ["dhob", 195584, 64], ["devinfo", 195840, 8],
+        ["logfs", 195848, 16384], ["apdp", 212232, 512], ["spunvm", 212992, 16384],
+        ["uefivarstore", 229376, 1024], ["super", 230400, 19005440],
+        ["userdata", 19235840, 228506584]
+      ]
+    },
+    "lun2": { "device": "sdc", "sectors": 16384, "logical_sector_bytes": 4096, "partitions": [["xbl_a", 256, 8192], ["xbl_config_a", 8448, 256]] },
+    "lun3": { "device": "sdd", "sectors": 16384, "logical_sector_bytes": 4096, "partitions": [["xbl_b", 256, 8192], ["xbl_config_b", 8448, 256]] },
+    "lun4": {
+      "device": "sde", "sectors": 1048576, "logical_sector_bytes": 4096,
+      "slot": "a",
+      "partitions": [
+        ["aop_a", 256, 1024], ["tz_a", 1280, 8192], ["hyp_a", 9472, 1024],
+        ["storsec_a", 10496, 256], ["devcfg_a", 10752, 256], ["keymaster_a", 11008, 1024],
+        ["cmnlib_a", 12032, 1024], ["cmnlib64_a", 13056, 1024], ["prov_a", 14080, 512],
+        ["abl_a", 14592, 2048], ["qupfw_a", 16640, 160], ["uefisecapp_a", 16896, 4096],
+        ["multiimgoem_a", 20992, 64], ["multiimgqti_a", 21056, 64], ["vbmeta_a", 21120, 128],
+        ["fsg_a", 21248, 49152], ["modem_a", 70400, 286720], ["dsp_a", 357120, 65536],
+        ["bluetooth_a", 422656, 2048], ["logo_a", 424704, 65536], ["boot_a", 490240, 131072],
+        ["recovery_a", 621312, 131072], ["dtbo_a", 752384, 49152]
+      ]
+    },
+    "lun5": {
+      "device": "sdf", "sectors": 1048576, "logical_sector_bytes": 4096,
+      "slot": "b",
+      "partitions": [
+        ["aop_b", 256, 1024], ["tz_b", 1280, 8192], ["hyp_b", 9472, 1024],
+        ["storsec_b", 10496, 256], ["devcfg_b", 10752, 256], ["keymaster_b", 11008, 1024],
+        ["cmnlib_b", 12032, 1024], ["cmnlib64_b", 13056, 1024], ["prov_b", 14080, 512],
+        ["abl_b", 14592, 2048], ["qupfw_b", 16640, 160], ["uefisecapp_b", 16896, 4096],
+        ["multiimgoem_b", 20992, 64], ["multiimgqti_b", 21056, 64], ["vbmeta_b", 21120, 128],
+        ["fsg_b", 21248, 49152], ["modem_b", 70400, 286720], ["dsp_b", 357120, 65536],
+        ["bluetooth_b", 422656, 2048], ["logo_b", 424704, 65536], ["boot_b", 490240, 131072],
+        ["recovery_b", 621312, 131072], ["dtbo_b", 752384, 49152]
+      ]
+    }
+  },
+  "safety_notes": [
+    "This is an inventory, not an instruction to write or repartition any LUN.",
+    "The existing userdata partition contains Android user data and is not an iOS root target.",
+    "Do not infer XNU UFS LBA size or DMA safety solely from these sysfs offsets."
+  ]
+}
