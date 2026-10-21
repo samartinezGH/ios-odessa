@@ -73,10 +73,21 @@ uses a live-FDT-derived upper RAM bank that does not overlap fixed reservations
 or dynamic allocation ranges; the loader accepts an Odessa-specific payload,
 checks payload bounds, and leaves video disabled. It carries the diagnostic
 arguments `-v debug=0x14e cpus=1 keepsyms=1`; `shim/build_odessa_xnu.sh` accepts
-an override through `XNU_CMDLINE`. No root-device argument is configured: the
-Odessa kernel has no storage driver yet, and `rd=ufsroot0` would select a
-Sweet-only device. This is a first handoff scaffold, not validated boot code
-or an iOS installer.
+an override through `XNU_CMDLINE`. A distinct Odessa read-only UFS patch
+compiles and links in CI, but its root path is unvalidated; `rd=ufsroot0`
+would select `userdata` by default, which is Android's encrypted data
+partition, not the prepared HFS+ image. The loader has no verified diagnostic
+output, and this candidate is not validated boot code or an iOS installer.
+
+The matching Motorola source branch
+[`android-11-release-rpa31.q2-59-17`](https://github.com/MotorolaMobilityLLC/kernel-msm/tree/android-11-release-rpa31.q2-59-17)
+contains the `sdmmagpie` UFS host and Odessa DTS. Its Qualcomm driver sequences
+regulators, bus votes, controller clocks/reset, QMP PHY power/configuration,
+lane clocks, link startup, and ICE integration. The current XNU patch only
+checks ABL's apparent live host state and replaces the UTRL; it does not port
+those setup/resume paths or prove SMMU/DMA/cache behavior. Compile success is
+not evidence that issuing even a read command is safe. Keep `rd=ufsroot0`
+disabled until that sequence and hardware ownership are ported and reviewed.
 
 ## Audit findings for the first Odessa handoff
 
