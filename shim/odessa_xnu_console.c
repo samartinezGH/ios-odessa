@@ -1,8 +1,6 @@
 /* The Odessa XNU loader must not write to the unverified ABL splash buffer. */
 #include "console.h"
 
-volatile uint32_t *con_fb;
-
 void con_clear(uint32_t bg) { (void)bg; }
 void con_skip(void) { }
 void con_str(const char *label, const char *text) { (void)label; (void)text; }
