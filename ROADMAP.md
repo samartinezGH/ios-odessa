@@ -38,7 +38,8 @@ Compare the Odessa device tree and stock images against every hardware assumptio
 - [x] Unpack the backed-up active-slot boot image and identify its Android boot header version, page size, kernel/ramdisk/DTB layout, and command line.
 - [x] Inspect the active slot and match the bootloader-reported DTBO index to the backed-up overlay table.
 - [ ] Determine which boot-image packaging and signature/verification constraints apply to temporary fastboot boot.
-- [ ] Adapt the build scripts to consume the Odessa stock DTB and emit a correctly structured diagnostic image.
+- [x] Adapt the build helper to accept the Odessa stock DTB explicitly and fail early when required toolchain inputs are missing.
+- [ ] Emit and inspect a correctly structured diagnostic image with the verified Odessa DTB and boot metadata.
 - [ ] Add host-side parsing checks that compare the generated image components with the intended inputs.
 
 **Acceptance:** a generated image can be unpacked and all component offsets, sizes, DTB contents, and boot arguments match expectations. No image is flashed.
