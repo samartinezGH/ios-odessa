@@ -136,12 +136,21 @@ def validate_odessa_profile(verbose=False):
         return False
 
     device = profile.get('device', {})
+    recovery = profile.get('recovery_snapshot', {})
+    display = recovery.get('display', {})
     boot = profile.get('stock_boot_b_observation', {})
     dtbo = profile.get('stock_dtbo_b_observation', {})
     implementation = profile.get('implementation_status', {})
     errors = []
     if (device.get('model'), device.get('codename')) != ('XT2087-1', 'odessa'):
         errors.append('target identity must remain Moto G9 Plus XT2087-1 (odessa)')
+    active_scanout = display.get('active_recovery_scanout', {})
+    if (display.get('connector'), display.get('enabled'), display.get('panel_name'), display.get('mode')) != ('DSI-1', True, 'txd_ft8756_fhd_vid', '1080x2400 at 60 Hz'):
+        errors.append('recovery display observation must match the read-only DRM connector report')
+    if (active_scanout.get('fourcc'), active_scanout.get('drm_format'), active_scanout.get('modifier'), active_scanout.get('pitch_bytes')) != ('XB24', 'DRM_FORMAT_XBGR8888', 'linear', 4352):
+        errors.append('active recovery framebuffer must match the read-only DRM debugfs state')
+    if (display.get('boot_splash_pixel_format'), display.get('boot_splash_stride_bytes')) != (None, None):
+        errors.append('recovery scanout must not be presented as verified boot splash layout')
     if profile.get('status') != 'inventory_only':
         errors.append('profile status must stay inventory_only until the board port is implemented')
     if not implementation or any(implementation.values()):
@@ -179,8 +188,10 @@ def validate_odessa_profile(verbose=False):
         errors.append('shim must consume an explicitly supplied Odessa stock DTB')
     if 'CROSS_COMPILE="${CROSS_COMPILE:-aarch64-none-elf-}"' not in build_script:
         errors.append('shim default cross-compiler must target bare-metal AArch64 ELF')
-    if 'LD="${LD:-${CROSS_COMPILE}ld}"' not in build_script or '$LD -static -T shim.ld --build-id=none' not in build_script:
+    if 'LD="${LD:-${CROSS_COMPILE}ld}"' not in build_script or '$LD -static -T shim.ld --build-id=none --gc-sections' not in build_script:
         errors.append('shim must link ELF objects with the target linker directly')
+    if '-ffunction-sections -fdata-sections' not in build_script or 'inherited loader/hardware/reset routine remains in the Odessa audit image' not in build_script:
+        errors.append('Odessa audit image must discard and reject unreferenced inherited hardware paths')
     if 'MKBOOTIMG="${MKBOOTIMG:-mkbootimg}"' not in build_script or '"$MKBOOTIMG" --header_version 2' not in build_script:
         errors.append('shim must allow an explicit Android mkbootimg executable')
     if 'validate-odessa-bootimg.py out/shim-boot.img out/Image out/ramdisk.bin "$ODESSA_DTB"' not in build_script:
