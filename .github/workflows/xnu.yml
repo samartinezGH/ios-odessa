@@ -72,7 +72,9 @@ jobs:
         env:
           # keep going after errors so one run reports every compile failure
           MAKEFLAGS: ${{ inputs.keep_going == 'false' && '' || '-k' }}
-        run: bash build.sh 2>&1 | tee build.log
+        run: |
+          set -o pipefail
+          bash build.sh 2>&1 | tee build.log
 
       - name: Package build tree for local compiles
         if: always()
