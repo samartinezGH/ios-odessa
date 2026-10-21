@@ -32,6 +32,7 @@ MKBOOTIMG="${MKBOOTIMG:-$REPO_ROOT/../toolchains/mkbootimg/mkbootimg.py}"
 OUT_DIR="${OUT_DIR:-$SCRIPT_DIR/out/odessa-xnu-candidate}"
 OS_VERSION="${OS_VERSION:-16.0.0}"
 OS_PATCH_LEVEL="${OS_PATCH_LEVEL:-2025-08}"
+XNU_CMDLINE="${XNU_CMDLINE:--v debug=0x14e cpus=1 keepsyms=1}"
 CFLAGS="-O2 -ffreestanding -nostdlib -fno-pic -mgeneral-regs-only -mstrict-align -fno-stack-protector -fno-jump-tables -ffunction-sections -fdata-sections -Wall -Wextra -DODESSA"
 
 for tool in "$CC" "${TOOL_PREFIX}ld" "${TOOL_PREFIX}objcopy" \
@@ -47,7 +48,7 @@ mkdir -p "$OUT_DIR"
 python3 ../tools/mkadt_odessa.py "$ACTIVE_FDT" "$OUT_DIR/odessa.adt"
 python3 ../tools/mkpayload.py "$XNU_KERNEL" "$OUT_DIR/odessa.adt" \
 	"$OUT_DIR/odessa-xnu-payload.bin" --target ODESSA \
-	--cmdline='debug=0x14e cpus=1 keepsyms=1'
+	--cmdline="$XNU_CMDLINE"
 
 for source in start.S loader.c fdt.c odessa_xnu_entry.c odessa_xnu_console.c; do
 	"$CC" $TARGET_FLAGS $CFLAGS -I. -c "$source" -o "$OUT_DIR/${source%.*}.o"
