@@ -58,6 +58,26 @@
     "decoded_android_version": "16.0.0",
     "decoded_os_patch_level": "2025-08"
   },
+  "stock_dtbo_b_observation": {
+    "source": "Read-only backup of /dev/block/by-name/dtbo_b; parsed locally",
+    "dtbo_table_version": 0,
+    "page_size": 4096,
+    "entry_count": 3,
+    "recovery_reported_applied_index": 2,
+    "indexing": "zero_based",
+    "reported_entry": {
+      "id": "0x00000049",
+      "revision": "0x000000c0",
+      "custom": ["0x00000000", "0x00000000", "0x00000000", "0x00000000"]
+    },
+    "panel_overlay": {
+      "name": "mipi_mot_vid_txd_1080p_681",
+      "controller": "FT8756",
+      "mode": "dsi_video_mode",
+      "resolution": { "width": 1080, "height": 2400 }
+    },
+    "note": "The bootloader-reported overlay index and table entry were matched from local backups. Overlay presence does not prove the inherited iOS display path is compatible."
+  },
   "implementation_status": {
     "odessa_shim": false,
     "odessa_apple_device_tree": false,
