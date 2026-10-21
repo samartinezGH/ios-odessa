@@ -2,15 +2,18 @@
 # Build the shim and wrap it in the Moto G9 Plus's observed boot.img v2 layout.
 set -euo pipefail
 cd "$(dirname "$0")"
-CROSS_COMPILE="${CROSS_COMPILE:-aarch64-linux-gnu-}"
+CROSS_COMPILE="${CROSS_COMPILE:-aarch64-none-elf-}"
 CC="${CC:-${CROSS_COMPILE}gcc}"
+TARGET_FLAGS="${TARGET_FLAGS:-}"
+LD="${LD:-${CROSS_COMPILE}ld}"
 OBJCOPY="${OBJCOPY:-${CROSS_COMPILE}objcopy}"
 READELF="${READELF:-${CROSS_COMPILE}readelf}"
 NM="${NM:-${CROSS_COMPILE}nm}"
+MKBOOTIMG="${MKBOOTIMG:-mkbootimg}"
 ODESSA_DTB="${ODESSA_DTB:-../dtb/boot_unpacked/dtb}"
 OS_VERSION="${OS_VERSION:-16.0.0}"
 OS_PATCH_LEVEL="${OS_PATCH_LEVEL:-2025-08}"
-CFLAGS="-O2 -ffreestanding -nostdlib -fno-pic -mgeneral-regs-only -mstrict-align -fno-stack-protector -Wall -Wextra"
+CFLAGS="-O2 -ffreestanding -nostdlib -fno-pic -mgeneral-regs-only -mstrict-align -fno-stack-protector -fno-jump-tables -Wall -Wextra"
 
 require_tool() {
 	command -v "$1" >/dev/null 2>&1 || {
@@ -19,7 +22,7 @@ require_tool() {
 	}
 }
 
-for tool in "$CC" "$OBJCOPY" "$READELF" "$NM" mkbootimg python3 gcc awk grep cpio gzip truncate; do
+for tool in "$CC" "$LD" "$OBJCOPY" "$READELF" "$NM" "$MKBOOTIMG" python3 gcc awk grep cpio gzip truncate; do
 	require_tool "$tool"
 done
 [ -f "$ODESSA_DTB" ] || {
@@ -30,13 +33,14 @@ done
 
 mkdir -p out
 for f in start.S shim.c console.c mmu.c fdt.c loader.c ufs.c; do
-	$CC $CFLAGS -c $f -o out/${f%.*}.o
+	$CC ${TARGET_FLAGS:+$TARGET_FLAGS} $CFLAGS -c $f -o out/${f%.*}.o
 done
 # The image runs wherever ABL puts it with no relocation pass: only the
 # header's image_size (start.o, linked at 0) may be an absolute address.
 abs=$($READELF -r out/shim.o out/console.o out/mmu.o out/fdt.o out/loader.o out/ufs.o | grep -c ABS64 || true)
 [ "$abs" = 0 ] || { echo "error: $abs absolute relocations in C objects" >&2; exit 1; }
-$CC $CFLAGS -static -T shim.ld -Wl,--build-id=none -Wl,--no-warn-rwx-segments -Wl,-N \
+
+$LD -static -T shim.ld --build-id=none --no-warn-rwx-segments -N \
 	out/start.o out/shim.o out/console.o out/mmu.o out/fdt.o out/loader.o out/ufs.o -o out/shim.elf
 $OBJCOPY -O binary out/shim.elf out/Image
 # ABL copies the file; pad to image_size so .bss/stacks exist as zeroed bytes.
@@ -51,11 +55,12 @@ if [ -n "${1:-}" ]; then
 else
 	(cd out && rm -rf rd && mkdir rd && cd rd && find . | cpio -o -H newc --quiet | gzip -9 > ../ramdisk.bin)
 fi
-mkbootimg --header_version 2 --kernel out/Image --ramdisk out/ramdisk.bin \
+"$MKBOOTIMG" --header_version 2 --kernel out/Image --ramdisk out/ramdisk.bin \
 	--dtb "$ODESSA_DTB" --base 0 --kernel_offset 0x8000 --ramdisk_offset 0x1000000 \
 	--tags_offset 0x100 --dtb_offset 0x1f00000 --pagesize 4096 \
 	--os_version "$OS_VERSION" --os_patch_level "$OS_PATCH_LEVEL" \
 	--cmdline "console=null" -o out/shim-boot.img
+python3 ../tools/validate-odessa-bootimg.py out/shim-boot.img out/Image out/ramdisk.bin "$ODESSA_DTB"
 # Host render of the console layout.
 gcc -O1 -Wall -o out/host_test console.c host_test.c && ./out/host_test
 ls -l out/Image out/shim-boot.img
