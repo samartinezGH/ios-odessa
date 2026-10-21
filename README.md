@@ -27,13 +27,23 @@ The sanitized, machine-readable inventory is in [`boards/odessa/profile.json`](b
 
 The backed-up active-slot `boot_b` has Android boot header v2, 4096-byte pages, and embedded-DTB addressing that matches the current shim packager's header layout. Its encoded OS metadata decodes to Android 16.0.0 / 2025-08, so `shim/build.sh` now defaults to those observed values while allowing explicit environment overrides. The backed-up `dtbo_b` contains three overlays; recovery reports zero-based index 2, whose table entry is board ID `0x49`, revision `0xc0`, and includes the TXD FT8756 1080 × 2400 video-panel configuration. This does not make the inherited SWEET shim, ADT, or display path safe to boot on Odessa.
 
+## Host build preparation
+
+`shim/build.sh` accepts the base DTB extracted from the same Moto G9 Plus stock boot image. Set `ODESSA_DTB` to that file before building; the default `../dtb/boot_unpacked/dtb` is only a conventional local path and is not included in Git. Keep the stock image and extracted DTB outside the repository. The helper checks for the ARM64 cross-compiler, binutils, `mkbootimg`, and host utilities before starting. For example:
+
+```sh
+ODESSA_DTB=/path/to/odessa/boot_b-unpacked/dtb shim/build.sh
+```
+
+This only prepares a host-side image. The Motorola bootloader's DTBO behavior with a custom image, Odessa shim initialization, and XNU configuration still need validation before any device boot.
+
 ## Current status
 
 | Area | Status |
 | --- | --- |
 | Fork and target identification | Complete |
 | Read-only hardware inventory | Started; sanitized facts are recorded above |
-| Odessa-specific shim and boot-image packaging | Not implemented |
+| Odessa-specific shim and boot-image packaging | Not implemented; metadata helper is prepared, no image built |
 | Odessa XNU machine configuration | Not implemented |
 | iOS root image for Odessa | Not built |
 | Kernel boot on the Moto G9 Plus | Not tested |
