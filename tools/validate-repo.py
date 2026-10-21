@@ -137,6 +137,7 @@ def validate_odessa_profile(verbose=False):
 
     device = profile.get('device', {})
     boot = profile.get('stock_boot_b_observation', {})
+    dtbo = profile.get('stock_dtbo_b_observation', {})
     implementation = profile.get('implementation_status', {})
     errors = []
     if (device.get('model'), device.get('codename')) != ('XT2087-1', 'odessa'):
@@ -145,6 +146,14 @@ def validate_odessa_profile(verbose=False):
         errors.append('profile status must stay inventory_only until the board port is implemented')
     if not implementation or any(implementation.values()):
         errors.append('unimplemented Odessa boot milestones must not be marked complete')
+    panel = dtbo.get('panel_overlay', {})
+    entry = dtbo.get('reported_entry', {})
+    if (dtbo.get('entry_count'), dtbo.get('recovery_reported_applied_index'), dtbo.get('indexing')) != (3, 2, 'zero_based'):
+        errors.append('DTBO table count and applied zero-based index must match the local recovery observation')
+    if (entry.get('id'), entry.get('revision')) != ('0x00000049', '0x000000c0'):
+        errors.append('reported DTBO entry ID/revision must match the backed-up index 2 entry')
+    if (panel.get('name'), panel.get('controller'), panel.get('mode')) != ('mipi_mot_vid_txd_1080p_681', 'FT8756', 'dsi_video_mode'):
+        errors.append('reported Odessa overlay must identify the observed FT8756 TXD video panel')
     build_path = os.path.join(REPO_ROOT, 'shim/build.sh')
     with open(build_path, encoding='utf-8') as f:
         build_script = f.read()
@@ -163,6 +172,10 @@ def validate_odessa_profile(verbose=False):
         errors.append('shim boot-image metadata must be supplied through the observed OS version settings')
     if 'OS_VERSION="${OS_VERSION:-16.0.0}"' not in build_script or 'OS_PATCH_LEVEL="${OS_PATCH_LEVEL:-2025-08}"' not in build_script:
         errors.append('shim OS metadata defaults must match the observed active-slot boot image')
+    if 'ODESSA_DTB="${ODESSA_DTB:-../dtb/boot_unpacked/dtb}"' not in build_script or '--dtb "$ODESSA_DTB"' not in build_script:
+        errors.append('shim must consume an explicitly supplied Odessa stock DTB')
+    if 'end_hex=$($NM out/shim.elf' not in build_script or "int(sys.argv[1], 16)" not in build_script:
+        errors.append('shim image sizing must use the portable ELF end-symbol conversion')
     if errors:
         print(red("[-] Odessa profile validation failed:"))
         for err in errors:
