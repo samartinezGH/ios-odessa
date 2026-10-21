@@ -33,6 +33,8 @@ Compare the Odessa device tree and stock images against every hardware assumptio
 
 **Acceptance:** every inherited address or hardware-specific behavior used in an Odessa build is either verified for XT2087-1 or replaced with a target-derived value. No raw serial or network identifiers are committed.
 
+**Display evidence (2026-10-21):** recovery's DRM sysfs reports the TXD FT8756 DSI connector enabled at 1080 × 2400 / 60 Hz. Read-only DRM debugfs reports recovery's active plane as `XB24` / `DRM_FORMAT_XBGR8888`, linear, with a 4352-byte pitch. Its GEM allocation is separate from the boot DTB's `cont_splash_region`; this recovery buffer cannot stand in for the bootloader splash layout. The DTB has no simple-framebuffer node or splash stride/pixel-format property, so console writes remain disabled for device testing.
+
 ## Phase 2 — Understand the Motorola boot chain
 
 - [x] Unpack the backed-up active-slot boot image and identify its Android boot header version, page size, kernel/ramdisk/DTB layout, and command line.
@@ -48,6 +50,7 @@ Compare the Odessa device tree and stock images against every hardware assumptio
 
 ## Phase 3 — Make the shim target-aware
 
+- [x] Disable inherited loader, UFS, MMU benchmark, GIC, PSCI, and automatic-reset calls from the current shim entry point; retain this only as a host-reviewed audit baseline.
 - [ ] Replace hard-coded SWEET framebuffer, GIC, UFS, reset, and memory values with an Odessa board profile or verified live-tree discovery.
 - [ ] Keep register access read-only until each writable register and its required power/clock state are understood.
 - [ ] Add a compact framebuffer diagnostic for exceptions and a persistent or host-readable log path.
@@ -55,6 +58,8 @@ Compare the Odessa device tree and stock images against every hardware assumptio
 - [ ] Build and inspect the shim on the host; run its existing host-render checks.
 
 **Acceptance:** the shim builds reproducibly for the Odessa profile and its host-side checks pass. It has not altered storage or boot partitions.
+
+**Audit baseline (2026-10-21):** the entry point reports CPU registers and waits without entering inherited hardware tests; exception handling also no longer invokes the inherited reset routine. The current framebuffer write still relies on unverified pixel format/stride, and legacy test routines remain in the source; the image is not cleared for device boot.
 
 ## Phase 4 — Bring up XNU on Odessa
 
