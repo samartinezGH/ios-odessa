@@ -105,13 +105,35 @@
     "cpu_fdt_affinity_values": ["0x0", "0x100", "0x200", "0x300", "0x400", "0x500", "0x600", "0x700"],
     "linux_cpu_sibling_groups": ["0-5", "6-7"],
     "fdt_cpu_map_clusters": {"cluster0": 6, "cluster1": 2},
+    "fixed_reserved_ranges": [
+      ["0x85700000", "0x00600000"], ["0x85e00000", "0x001ff000"],
+      ["0x85fff000", "0x00001000"], ["0x86000000", "0x00200000"],
+      ["0x86200000", "0x04100000"], ["0x8ab00000", "0x00500000"],
+      ["0x8b000000", "0x08400000"], ["0x93400000", "0x00500000"],
+      ["0x93900000", "0x01e00000"], ["0x95700000", "0x01e00000"],
+      ["0x97500000", "0x00180000"], ["0x97680000", "0x00080000"],
+      ["0x97710000", "0x00005000"], ["0x97715000", "0x00002000"],
+      ["0x9e400000", "0x01400000"], ["0x9c000000", "0x01700000"],
+      ["0x9c000000", "0x01800000"], ["0x9d700000", "0x00100000"],
+      ["0x97700000", "0x00010000"], ["0xaf000000", "0x000bf800"],
+      ["0xaefd2000", "0x0002e000"], ["0xaefa2000", "0x00030000"],
+      ["0xaefa1800", "0x00000800"]
+    ],
+    "dynamic_reserved_alloc_ranges": [
+      {"node": "adsp_region", "base": "0x00000000", "size": "0xffffffff"},
+      {"node": "cdsp_region", "base": "0x00000000", "size": "0xffffffff"},
+      {"node": "qseecom_ta_region", "base": "0x00000000", "size": "0xffffffff"},
+      {"node": "sp_region", "base": "0x00000000", "size": "0xffffffff"},
+      {"node": "secure_display_region", "base": "0x00000000", "size": "0xffffffff"},
+      {"node": "linux,cma", "base": "0x00000000", "size": "0xffffffff"}
+    ],
     "pointer_authentication": "unverified; do not assume support",
     "xnu_16k_granule_compatibility": "unverified; Android's active kernel is configured for 4K pages",
     "dma_safety": "unverified; Linux ARM SMMU support does not establish XNU mapping or ownership",
     "boot_security_state": "conflicting Android properties and prior raw kernel command-line observation; confirm in bootloader before device tests",
     "phase1_matrix": "PHASE1_HARDWARE_MATRIX.md",
     "partition_map": "partition-map.json",
-    "note": "The current tools/mkadt_odessa.py copies CPU reg affinities but does not preserve the FDT cpu-map cluster structure; do not enable secondary CPUs until this is resolved."
+    "note": "Fixed and dynamic reservation ranges describe the captured FDT only; they do not prove that secure-world/XPU/firmware ownership is absent. The current tools/mkadt_odessa.py copies CPU reg affinities but does not preserve the FDT cpu-map cluster structure; do not enable secondary CPUs until this is resolved."
   },
   "recovery_snapshot": {
     "captured": "2026-10-21",
