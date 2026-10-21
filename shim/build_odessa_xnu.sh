@@ -33,6 +33,15 @@ OUT_DIR="${OUT_DIR:-$SCRIPT_DIR/out/odessa-xnu-candidate}"
 OS_VERSION="${OS_VERSION:-16.0.0}"
 OS_PATCH_LEVEL="${OS_PATCH_LEVEL:-2025-08}"
 XNU_CMDLINE="${XNU_CMDLINE:--v debug=0x14e cpus=1 keepsyms=1}"
+cpu_args=$(printf '%s\n' "$XNU_CMDLINE" | grep -Eo '(^|[[:space:]])cpus=[^[:space:]]+' | sed 's/^[[:space:]]*//')
+if [ "$cpu_args" != "cpus=1" ]; then
+	echo "error: Odessa payload must remain single-CPU until MPIDR/PSCI topology is validated" >&2
+	exit 1
+fi
+if [[ "$XNU_CMDLINE" =~ (^|[[:space:]])rd=ufsroot0([[:space:]]|$) ]]; then
+	echo "error: UFS root is disabled until the Motorola PHY/ICE/DMA sequence is ported" >&2
+	exit 1
+fi
 CFLAGS="-O2 -ffreestanding -nostdlib -fno-pic -mgeneral-regs-only -mstrict-align -fno-stack-protector -fno-jump-tables -ffunction-sections -fdata-sections -Wall -Wextra -DODESSA"
 
 for tool in "$CC" "${TOOL_PREFIX}ld" "${TOOL_PREFIX}objcopy" \
