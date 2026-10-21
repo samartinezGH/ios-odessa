@@ -39,10 +39,12 @@ Compare the Odessa device tree and stock images against every hardware assumptio
 - [x] Inspect the active slot and match the bootloader-reported DTBO index to the backed-up overlay table.
 - [ ] Determine which boot-image packaging and signature/verification constraints apply to temporary fastboot boot.
 - [x] Adapt the build helper to accept the Odessa stock DTB explicitly and fail early when required toolchain inputs are missing.
-- [ ] Emit and inspect a correctly structured diagnostic image with the verified Odessa DTB and boot metadata.
-- [ ] Add host-side parsing checks that compare the generated image components with the intended inputs.
+- [x] Emit and inspect a host-only packaging smoke image with the verified Odessa DTB and boot metadata; this image still contains unverified SWEET code and is not for device boot.
+- [x] Add host-side parsing checks that compare the generated image components with the intended inputs byte-for-byte.
 
 **Acceptance:** a generated image can be unpacked and all component offsets, sizes, DTB contents, and boot arguments match expectations. No image is flashed.
+
+**Host-only packaging check (2026-10-21):** the generated boot header and component offsets were parsed and the kernel, ramdisk, and DTB were each compared byte-for-byte against their inputs. The smoke image is not an Odessa diagnostic executable: inherited SWEET MMIO and reset behavior remain unverified, so it must not be booted. Temporary-boot support and the Odessa-specific shim are still open.
 
 ## Phase 3 — Make the shim target-aware
 
