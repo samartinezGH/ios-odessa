@@ -318,14 +318,17 @@ def build_adt(memory_range, cpu_nodes, gic_regs, virtual_intid, timebase, ufs_re
         ('firmware-version', cstr('odessa-xnu-experimental')),
         ('system-firmware-version', cstr('odessa-xnu-experimental')),
     ], [node('memory-map', [ph()])])
+    # Until MPIDR/cluster/PSCI mappings are validated on this target, export
+    # only the boot CPU. Odessa XNU candidate args also set cpus=1.
+    boot_cpu = cpu_nodes[0]
     cpus = node('cpus', [ph(), ('#address-cells', u32(1)), ('#size-cells', u32(0))], [
         node(f'cpu{i}', [ph(), ('device_type', cstr('cpu')),
                          ('compatible', cstr('arm,armv8')),
                          ('reg', u32(mpidr)), ('cpu-id', u32(i)),
                          ('timebase-frequency', u32(timebase)),
-                         ('state', cstr('running' if i == 0 else 'stopped')),
+                         ('state', cstr('running')),
                          ('enable-method', cstr('psci'))])
-        for i, (_name, mpidr) in enumerate(cpu_nodes)
+        for i, (_name, mpidr) in enumerate([boot_cpu])
     ])
     gic = node('gic', [ph(), ('compatible', cstr('arm,gic-v3')),
                        ('interrupt-controller', b''),
@@ -369,7 +372,7 @@ def main():
         open(args.output, 'wb').write(result)
         print(f'ADT: {args.output} ({len(result)} bytes)')
         print(f'XNU RAM candidate: base={ram[0]:#x} size={ram[1]:#x} end={ram[0]+ram[1]:#x}')
-        print(f'CPU nodes: {len(cpus)}; boot CPU affinity: {cpus[0][1]:#x}; secondary CPUs are described as stopped')
+        print(f'CPU nodes exported: 1; boot CPU affinity: {cpus[0][1]:#x}; secondary CPUs omitted pending target validation')
         print(f'GICv3: dist={gic[0][0]:#x} redist={gic[1][0]:#x}; virtual timer PPI={timer_irq}; timebase={timebase} Hz')
         print(f'UFS host: base={ufs[0]:#x} size={ufs[1]:#x}; driver enabled only by rd=ufsroot0')
         print('This is a host-generated bring-up ADT, not a bootable or device-tested image.')
