@@ -19,6 +19,7 @@ The current target was identified from a live device-tree dump as:
 - GICv3 distributor: 0x17a00000; redistributors: 0x17a60000
 - UFS controller: 0x1d84000
 - Display: TXD FT8756 panel, 1080 × 2400
+- Boot splash reservation: `0x9c000000`–`0x9d700000` in the backed-up boot DTB; pixel format and row stride remain unverified
 - Touch: FocalTech FT8756 over Qualcomm GENI SPI (QUP SE6, 0xa80000)
 
 These are initial observations from the device tree, not a complete hardware bring-up. The raw dump is intentionally not included because it contains device identifiers and network addresses. Verify every address, clock, interrupt, memory reservation, and peripheral initialization sequence before using it in kernel code.
@@ -29,13 +30,19 @@ The backed-up active-slot `boot_b` has Android boot header v2, 4096-byte pages, 
 
 ## Host build preparation
 
-`shim/build.sh` accepts the base DTB extracted from the same Moto G9 Plus stock boot image. Set `ODESSA_DTB` to that file before building; the default `../dtb/boot_unpacked/dtb` is only a conventional local path and is not included in Git. Keep the stock image and extracted DTB outside the repository. The helper checks for the ARM64 cross-compiler, binutils, `mkbootimg`, and host utilities before starting. For example:
+`shim/build.sh` uses an AArch64 bare-metal ELF cross-toolchain (`aarch64-none-elf-`) and Android's `mkbootimg` utility. On an Intel Mac, select Arm's `darwin-x86_64` host package and `aarch64-none-elf` target; newer releases may only offer Apple silicon packages, so check the host architecture listed for the selected release. Set `CROSS_COMPILE` to the toolchain's binary prefix and `MKBOOTIMG` to the Android `mkbootimg` executable or script. If the Intel-hosted GCC binary requires a missing Homebrew runtime library, Xcode Clang can compile the freestanding sources with `CC=clang TARGET_FLAGS="-target aarch64-none-elf"`; the cross toolchain's GNU linker and binutils remain in use.
+
+The helper accepts the base DTB extracted from the same Moto G9 Plus stock boot image. Set `ODESSA_DTB` to that file before building; the default `../dtb/boot_unpacked/dtb` is only a conventional local path and is not included in Git. Keep the stock image and extracted DTB outside the repository. After packaging, the build checks the Android header and compares the embedded kernel, ramdisk, and DTB byte-for-byte with the inputs. For example:
 
 ```sh
-ODESSA_DTB=/path/to/odessa/boot_b-unpacked/dtb shim/build.sh
+CROSS_COMPILE=/path/to/aarch64-none-elf/bin/aarch64-none-elf- \\
+CC=clang TARGET_FLAGS="-target aarch64-none-elf" \\
+MKBOOTIMG=/path/to/mkbootimg.py \\
+ODESSA_DTB=/path/to/odessa/boot_b-unpacked/dtb \\
+shim/build.sh
 ```
 
-This only prepares a host-side image. The Motorola bootloader's DTBO behavior with a custom image, Odessa shim initialization, and XNU configuration still need validation before any device boot.
+The current shim still contains inherited SWEET hardware assumptions and is not safe or ready to boot on Odessa. A successful build only checks compilation and boot-image packaging on the host; it does not establish device compatibility. Do not boot its output until the Odessa-specific shim, memory map, register accesses, and XNU handoff have been reviewed and verified.
 
 ## Current status
 
@@ -43,7 +50,7 @@ This only prepares a host-side image. The Motorola bootloader's DTBO behavior wi
 | --- | --- |
 | Fork and target identification | Complete |
 | Read-only hardware inventory | Started; sanitized facts are recorded above |
-| Odessa-specific shim and boot-image packaging | Not implemented; metadata helper is prepared, no image built |
+| Odessa-specific shim and boot-image packaging | Not complete; host package validation works, but the shim still contains unverified SWEET hardware code and must not be booted |
 | Odessa XNU machine configuration | Not implemented |
 | iOS root image for Odessa | Not built |
 | Kernel boot on the Moto G9 Plus | Not tested |
@@ -75,7 +82,6 @@ The existing shim, XNU patch series, device-tree generator, and hardware drivers
 | tools/mkpayload.py | Packs an XNU kernel, Apple Device Tree, and boot arguments |
 | tools/unpack_bootv2.py | Parses Android boot-image versions supported by the current helper |
 | tools/ | Image, logging, validation, and QEMU helpers inherited from ios-sweet |
-| NOTES.md | Active Odessa handoff followed by clearly marked upstream SWEET history |
 | ROADMAP.md | Porting stages and completion criteria |
 
 Names containing “sweet” remain in legacy source paths and symbols until the Odessa-specific implementation is designed. They do not imply support for Odessa.
