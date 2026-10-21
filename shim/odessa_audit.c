@@ -1,8 +1,8 @@
 /*
  * Minimal Odessa audit image entry point.
  *
- * This is a CPU/DTB handoff probe, not an XNU loader. The console still uses
- * an unverified candidate framebuffer layout; do not boot without review.
+ * This is a CPU/DTB handoff probe, not an XNU loader. Odessa builds link a
+ * no-op console because the ABL splash layout is not verified.
  */
 #include <stdint.h>
 #include "console.h"
