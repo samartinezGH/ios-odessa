@@ -33,22 +33,29 @@ done
 }
 
 mkdir -p out
-for f in start.S odessa_audit.c console.c; do
+# Use the Odessa no-op console. The boot splash layout is not described by
+# the target DTB, so an audit image must never write to the inherited SWEET
+# framebuffer address or guess a stride/pixel format.
+for f in start.S odessa_audit.c odessa_xnu_console.c; do
 	$CC ${TARGET_FLAGS:+$TARGET_FLAGS} $CFLAGS -c $f -o out/${f%.*}.o
 done
 # The image runs wherever ABL puts it with no relocation pass: only the
 # header's image_size (start.o, linked at 0) may be an absolute address.
-abs=$($READELF -r out/odessa_audit.o out/console.o | grep -c ABS64 || true)
+abs=$($READELF -r out/odessa_audit.o out/odessa_xnu_console.o | grep -c ABS64 || true)
 [ "$abs" = 0 ] || { echo "error: $abs absolute relocations in C objects" >&2; exit 1; }
 
 $LD -static -T shim.ld --build-id=none --gc-sections --no-warn-rwx-segments -N \
-	out/start.o out/odessa_audit.o out/console.o -o out/shim.elf
+	out/start.o out/odessa_audit.o out/odessa_xnu_console.o -o out/shim.elf
 if $NM out/shim.elf | grep -Eq '[[:space:]](loader_boot|test_ufs|mmu_enable|test_gic|test_smp|find_gicr|reset|secondary_main)$'; then
 	echo "error: inherited loader/hardware/reset/secondary routine remains in the Odessa audit image" >&2
 	exit 1
 fi
 if $OBJDUMP -d out/shim.elf | grep -Eq '[[:space:]]smc([[:space:]]|$)'; then
 	echo "error: PSCI/SMC call remains in the Odessa audit image" >&2
+	exit 1
+fi
+if $NM out/shim.elf | grep -Eq '[[:space:]](con_fb|fb_(clear|write))$'; then
+	echo "error: framebuffer dependency remains in the Odessa audit image" >&2
 	exit 1
 fi
 $OBJCOPY -O binary out/shim.elf out/Image
@@ -70,6 +77,7 @@ fi
 	--os_version "$OS_VERSION" --os_patch_level "$OS_PATCH_LEVEL" \
 	--cmdline "console=null" -o out/shim-boot.img
 python3 ../tools/validate-odessa-bootimg.py out/shim-boot.img out/Image out/ramdisk.bin "$ODESSA_DTB"
-# Host render of the console layout.
+# This host-only renderer checks generic console drawing code; it is not
+# linked into the Odessa image and says nothing about ABL's splash layout.
 gcc -O1 -Wall -o out/host_test console.c host_test.c && ./out/host_test
 ls -l out/Image out/shim-boot.img
