@@ -158,7 +158,9 @@ void exc_handler(uint64_t slot, uint64_t *regs)
 	con_hex("X0", regs[0]);
 	con_hex("X1", regs[1]);
 	con_hex("X30", regs[29]);	/* stashed lr is just above the frame */
-	reset(40);
+	/* Do not trigger the inherited board-specific restart sequence on fault. */
+	for (;;)
+		__asm__ volatile("wfe");
 }
 
 /* ---- SMP ---- */
@@ -372,64 +374,25 @@ static uint32_t to_us(uint64_t ticks)
 
 void shim_main(uint64_t dtb)
 {
-	struct mmu_info mi;
-
-	/* An xnu payload in the ramdisk means: boot it (MMU stays off). */
-	stage = "loader";
-	con_clear(RED);
-	con_str("SHIM", "sweet milestone 4: xnu loader");
-	con_skip();
-	const char *why = loader_boot(dtb);
-	con_str("LOADER", why);
-	con_skip();
-
-	/* No payload: probe the internal UFS while the MMU is still off. */
-	stage = "ufs";
-	test_ufs();
-	con_skip();
-	/* Keep the probe results on screen (later tests clear it); reset after 3 min. */
-	con_str("UFS", "probe done, reset in ~3 min");
-	delay_ms(180000);
-	reset(20);
-
-	stage = "fill off";
-	uint64_t fill_off = ticks_fill(RED);
-	uint64_t mem_off = ticks_mem();
-
-	stage = "mmu enable";
-	int rc = mmu_enable(&mi);
-
-	stage = "fill on";
-	uint64_t fill_on = rc ? 0 : ticks_fill(RED);
-	uint64_t mem_on = rc ? 0 : ticks_mem();
-	if (rc)
-		con_clear(RED);
-
-	con_str("SHIM", "sweet milestone 3");
-	con_skip();
+	/*
+	 * Odessa audit baseline: do not invoke inherited SWEET probes here.
+	 * They reprogram UFS/GIC, can transfer control to XNU, and reset the phone.
+	 * Keep the first image inert until each board-specific path is independently
+	 * reviewed. The display geometry and pixel format are still unverified, so
+	 * even this framebuffer diagnostic is for host review only, not device boot.
+	 */
+	stage = "odessa audit";
+	con_clear(BLUE);
+	con_str("ODESSA", "host-reviewed audit build");
+	con_str("STATUS", "not a device boot image");
+	con_str("HW", "XT2087-1 / sdmmagpie");
 	con_hex2("DTB", "at=", dtb, "magic=", dtb ? __builtin_bswap32(rd32(dtb)) : 0);
-	con_hex2("IMAGE", "lo=", mi.img_lo, "hi=", mi.img_hi);
-	con_hex2("MMU", "rc=", rc, "l3=", mi.n_l3);
-	con_hex2("TTBR0", "pa=", mi.ttbr, "pa_hi=", mi.ttbr >> 32);
-	con_hex("SCTLR0", mi.sctlr_before);
-	con_hex("SCTLR1", mi.sctlr_after);
-	con_hex("TCR", rsr("tcr_el1"));
-	con_hex2("PARANGE", "mmfr0=", rsr("id_aa64mmfr0_el1") & 0xf, "tg16=", (rsr("id_aa64mmfr0_el1") >> 20) & 0xf);
-	con_skip();
-	con_hex("PAR img", mmu_probe((uintptr_t)shim_main));
-	con_hex("PAR fb", mmu_probe(FB_PHYS + 0x1000));
-	con_hex("PAR gic", mmu_probe(GICD_BASE));
-	con_hex("PAR 12G", mmu_probe(0x300000000UL));
-	con_skip();
-	con_hex2("FILL us", "off=", to_us(fill_off), "on=", to_us(fill_on));
-	con_hex2("MEM us", "off=", to_us(mem_off), "on=", to_us(mem_on));
-	con_skip();
-
-	stage = "psci";
-	con_hex2("PSCI", "ver=", smc(PSCI_VERSION, 0, 0, 0), "smccc=", smc(SMCCC_VERSION, 0, 0, 0));
-	con_skip();
-	test_gic();
-
-	stage = "done";
-	reset(40);
+	con_hex("MPIDR", rsr("mpidr_el1"));
+	con_hex("MIDR", rsr("midr_el1"));
+	con_hex("MMFR0", rsr("id_aa64mmfr0_el1"));
+	con_hex("CNTFRQ", rsr("cntfrq_el0"));
+	con_str("UFS/GIC", "inherited probes disabled");
+	con_str("RESET", "automatic reset disabled");
+	for (;;)
+		__asm__ volatile("wfe");
 }
