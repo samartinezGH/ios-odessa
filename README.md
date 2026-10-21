@@ -44,7 +44,7 @@ ODESSA_DTB=/path/to/odessa/boot_b-unpacked/dtb \\
 shim/build.sh
 ```
 
-The audit build compiles a dedicated `shim/odessa_audit.c` entry point with startup and console code only; it excludes the inherited UFS, MMU, loader, and GIC probe files. Unexpected secondary CPUs wait without MMIO or PSCI calls, and the build rejects retained hardware-probe symbols or SMC instructions. The diagnostic writes to a framebuffer with unverified format and stride, and its assumed ABL entry state is not verified. One earlier user-approved temporary boot was accepted by fastboot, but Android started from the bootloader menu's **START** selection and no diagnostic screen was observed. This does not confirm that the shim ran or that XNU can boot.
+The audit build compiles a dedicated `shim/odessa_audit.c` entry point with startup and no-op console code; it excludes the inherited UFS, MMU, loader, and GIC probe files and does not write to the unknown ABL splash buffer. Unexpected secondary CPUs wait without MMIO or PSCI calls, and the build rejects retained hardware-probe symbols or disassembled SMC instructions. Its ABL entry state is not verified. One earlier user-approved temporary boot was accepted by fastboot, but Android started from the bootloader menu's **START** selection and no diagnostic screen was observed. This does not confirm that the shim ran or that XNU can boot.
 
 The separate `tools/mkadt_odessa.py` and `shim/build_odessa_xnu.sh` path consumes an active FDT capture, derives an unreserved high-memory candidate, creates a minimal Odessa ADT, and packages the CI XNU kernel behind an Odessa-only loader. The loader leaves video disabled because the boot-splash pixel layout is unknown. The produced candidate is host-validated only: CPU/MMU startup, ABL handoff, GIC/timer/PSCI, diagnostics, and a root-storage path remain unverified. It contains no iOS root image and is not ready for a device boot.
 
@@ -54,7 +54,7 @@ The separate `tools/mkadt_odessa.py` and `shim/build_odessa_xnu.sh` path consume
 | --- | --- |
 | Fork and target identification | Complete |
 | Read-only hardware inventory | Active FDT captured; sanitized facts are recorded above |
-| Odessa audit shim and boot-image packaging | Host diagnostic builds and validates; one approved temporary boot was accepted by fastboot, but the screen result is unconfirmed and ABL handoff/framebuffer layout remain unverified |
+| Odessa audit shim and boot-image packaging | Host diagnostic builds and validates with framebuffer writes disabled; one approved temporary boot was accepted by fastboot, but the screen result is unconfirmed and ABL handoff remains unverified |
 | Odessa XNU machine configuration | Experimental ODESSA config compiles and links in CI; host-only ADT and loader candidate built, hardware startup is not implemented |
 | iOS root image for Odessa | iOS 16.7.16 HFS+ userland image prepared and checked on the Mac; no Odessa root-storage path connects it to XNU |
 | XNU kernel boot on the Moto G9 Plus | Not tested; the current XNU handoff image has not been booted |
