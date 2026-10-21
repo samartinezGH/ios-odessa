@@ -27,6 +27,15 @@
       "width": 1080,
       "height": 2400
     },
+    "boot_splash_reservation": {
+      "source": "Backed-up active-slot boot DTB, parsed locally",
+      "node": "reserved-memory/cont_splash_region@9c000000",
+      "base": "0x9c000000",
+      "size": "0x01700000",
+      "pixel_format": null,
+      "stride_bytes": null,
+      "note": "The reservation base matches the inherited shim framebuffer base; pixel format and stride are not verified."
+    },
     "touch": {
       "controller": "FocalTech FT8756",
       "transport": "Qualcomm GENI SPI",
