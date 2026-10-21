@@ -23,17 +23,19 @@ The sanitized hardware and recovery observations are also recorded in [`boards/o
 
 Compare the Odessa device tree and stock images against every hardware assumption in the inherited shim, XNU patches, and tools.
 
-- [ ] Produce a sanitized hardware matrix for CPU MIDR/MPIDR topology, PSCI, timer frequency, GIC, page-size support, and pointer authentication.
-- [ ] Reconcile both DDR banks, reserved-memory carve-outs, DMA limits, and the RAM range that XNU may safely own.
-- [ ] Verify UFS host/PHY/ICE details and the exact partition map without issuing writes.
-- [ ] Trace the boot framebuffer, display controller, panel timings, and handoff format.
-- [ ] Trace the FT8756 touchscreen over GENI SPI: controller, clocks, GPIOs, reset, interrupt, power rails, and firmware behavior.
-- [ ] Identify PMICs, buttons, regulators, RPMh/TCS requirements, USB controller state, and safe diagnostic access.
-- [ ] Separate confirmed observations from hypotheses in NOTES.md.
+- [x] Produce a sanitized hardware matrix for CPU MIDR/MPIDR topology, PSCI, timer frequency, GIC, page-size support, and pointer authentication.
+- [x] Reconcile both DDR banks, reserved-memory carve-outs, DMA limits, and the RAM range that XNU may safely own; record unresolved ownership explicitly.
+- [x] Verify UFS host/PHY/ICE details and inventory the exact partition map without issuing writes.
+- [x] Trace the boot framebuffer, display controller, panel timings, and handoff format; distinguish recovery scanout from boot splash.
+- [x] Trace the FT8756 touchscreen over GENI SPI: controller, clocks, GPIOs, reset, interrupt, and explicitly record unverified power/firmware behavior.
+- [x] Identify PMICs, buttons, regulators, RPMh/TCS requirements, USB controller state, and safe diagnostic access; record driver gaps.
+- [x] Separate confirmed observations from hypotheses in the public sanitized matrix and local NOTES.md; no device IDs were added.
 
 **Acceptance:** every inherited address or hardware-specific behavior used in an Odessa build is either verified for XT2087-1 or replaced with a target-derived value. No raw serial or network identifiers are committed.
 
 **Display evidence (2026-10-21):** recovery's DRM sysfs reports the TXD FT8756 DSI connector enabled at 1080 × 2400 / 60 Hz. Read-only DRM debugfs reports recovery's active plane as `XB24` / `DRM_FORMAT_XBGR8888`, linear, with a 4352-byte pitch. Its GEM allocation is separate from the boot DTB's `cont_splash_region`; this recovery buffer cannot stand in for the bootloader splash layout. The DTB has no simple-framebuffer node or splash stride/pixel-format property, so console writes remain disabled for device testing.
+
+**Phase 1 audit (2026-10-21):** the complete sanitized hardware comparison is in [`boards/odessa/PHASE1_HARDWARE_MATRIX.md`](boards/odessa/PHASE1_HARDWARE_MATRIX.md), and the read-only six-LUN/A-B partition inventory is in [`boards/odessa/partition-map.json`](boards/odessa/partition-map.json). Live Android reports 4K pages; the XNU handoff uses a 16K assumption. FDT CPU affinity values use `0, 0x100, …, 0x700`, while Linux topology and the DT CPU map describe 6+2 CPU clusters; the current ADT generator drops that cluster map. PAC and bootloader memory ownership remain unverified. Consequently the audit deliverables are complete, but the Phase 1 engineering acceptance gate remains open and the hardware profile is not safe to call XNU-ready. No partition write or phone reboot was performed.
 
 ## Phase 2 — Understand the Motorola boot chain
 
