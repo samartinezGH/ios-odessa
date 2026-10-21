@@ -44,7 +44,7 @@ ODESSA_DTB=/path/to/odessa/boot_b-unpacked/dtb \\
 shim/build.sh
 ```
 
-The shim entry point now disables the inherited loader, UFS, MMU benchmark, GIC, PSCI, and automatic-reset probes; exception handling also waits instead of invoking the inherited restart routine. It is only a host-reviewed audit baseline: the diagnostic still writes to a framebuffer whose pixel format and stride are unverified, and legacy SWEET implementations remain elsewhere in the image. A successful build only checks compilation and boot-image packaging on the host; it does not establish device compatibility. Do not boot its output until the Odessa-specific shim, memory map, framebuffer, register accesses, and XNU handoff have been reviewed and verified.
+The build compiles a dedicated `shim/odessa_audit.c` entry point with startup and console code only; it does not compile the inherited UFS, MMU, loader, or GIC probe files. Unexpected secondary CPUs wait without MMIO or PSCI calls, and the build rejects retained hardware-probe symbols or SMC instructions. The diagnostic still writes to a framebuffer using an unverified candidate format and stride, and its assumed ABL entry state is not yet verified on Odessa. A successful build only checks compilation and boot-image packaging on the host; it does not establish device compatibility. The output is not approved for device boot until the user reviews the specific image.
 
 ## Current status
 
@@ -52,7 +52,7 @@ The shim entry point now disables the inherited loader, UFS, MMU benchmark, GIC,
 | --- | --- |
 | Fork and target identification | Complete |
 | Read-only hardware inventory | Started; sanitized facts are recorded above |
-| Odessa-specific shim and boot-image packaging | Not complete; the entry point disables inherited hardware probes, but framebuffer parameters and legacy code remain unverified; host package validation works |
+| Odessa audit shim and boot-image packaging | Host diagnostic builds and validates, but the ABL handoff and framebuffer layout are unverified; no device boot test has been run |
 | Odessa XNU machine configuration | Not implemented |
 | iOS root image for Odessa | Not built |
 | Kernel boot on the Moto G9 Plus | Not tested |
@@ -78,7 +78,7 @@ The existing shim, XNU patch series, device-tree generator, and hardware drivers
 
 | Path | Purpose |
 | --- | --- |
-| shim/ | Inherited bare-metal boot shim; currently SWEET-specific |
+| shim/ | Odessa audit entry point plus inherited SWEET loader and hardware code |
 | xnu/patches/ | Inherited XNU patches; hardware assumptions require review |
 | tools/mkadt.py | Inherited Apple Device Tree generator; currently describes SWEET |
 | tools/mkpayload.py | Packs an XNU kernel, Apple Device Tree, and boot arguments |
