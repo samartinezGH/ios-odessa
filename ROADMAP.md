@@ -90,6 +90,7 @@ Compare the Odessa device tree and stock images against every hardware assumptio
 
 - [x] Inventory the Odessa UFSHCI, QMP PHY, ICE block, clocks, reset, regulators, and lane count from the live device tree.
 - [ ] Trace the matching Qualcomm UFSHCI/PHY initialization and resume sequence; do not issue commands until host ownership, DMA, and ICE behavior are understood.
+- [ ] Compile and review the experimental read-only UFS patch `xnu/patches/0083-odessa-readonly-ufs.patch`; it reuses ABL state and is not device-validated.
 - [ ] Map the Motorola partition table and A/B slots from stock metadata; do not reuse Redmi partition indices.
 - [ ] Boot a RAM-disk test root before attempting any internal-storage root.
 - [ ] Add read-only UFS support and confirm block addresses against recovery/Android metadata.
@@ -98,7 +99,7 @@ Compare the Odessa device tree and stock images against every hardware assumptio
 
 **Acceptance:** XNU can read a known test image and start a minimal init without modifying stock partitions. Any later write requires a verified backup and explicit user approval.
 
-**Device-tree inventory (2026-10-21):** the captured live FDT marks `qcom,ufshc` at `0x01d84000` (size `0x30000`), `qcom,ufs-phy-qmp-v3` at `0x01d87000` (size `0xddc`), and `qcom,ice` at `0x01d90000` (size `0x8000`) present/enabled, with one lane per direction. It names the controller/PHY/ICE clocks, controller reset, and supply dependencies; the sanitized values are in [`boards/odessa/profile.json`](boards/odessa/profile.json). This describes the firmware's resource graph, not XNU-ready register sequencing. ICE, power/clock transitions, DMA/IOMMU constraints, and exclusive controller ownership still need to be derived before a UFS command can be safe. No controller register was accessed and no device state changed during this inventory.
+**Device-tree inventory (2026-10-21):** the captured live FDT marks `qcom,ufshc` at `0x01d84000` (size `0x3000`), `qcom,ufs-phy-qmp-v3` at `0x01d87000` (size `0xddc`), and `qcom,ice` at `0x01d90000` (size `0x8000`) present/enabled, with one lane per direction. It names the controller/PHY/ICE clocks, controller reset, and supply dependencies; the sanitized values are in [`boards/odessa/profile.json`](boards/odessa/profile.json). This describes the firmware's resource graph, not XNU-ready register sequencing. ICE, power/clock transitions, DMA/IOMMU constraints, and exclusive controller ownership still need to be derived before a UFS command can be safe. No controller register was accessed and no device state changed during this inventory.
 
 ## Phase 6 — Start the iOS 16 userland
 
