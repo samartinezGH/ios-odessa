@@ -19,6 +19,7 @@ The current target was identified from a live device-tree dump as:
 - GICv3 distributor: 0x17a00000; redistributors: 0x17a60000
 - UFS controller: 0x1d84000
 - Display: TXD FT8756 panel, 1080 × 2400
+- Recovery DRM reports the DSI connector enabled at 1080 × 2400 / 60 Hz. Its active recovery scanout is `XB24` (`DRM_FORMAT_XBGR8888`, per the [Linux DRM FourCC definitions](https://github.com/torvalds/linux/blob/master/include/uapi/drm/drm_fourcc.h)) with a 4352-byte pitch, but this is a separate runtime buffer and does not identify the bootloader splash buffer's layout.
 - Boot splash reservation: `0x9c000000`–`0x9d700000` in the backed-up boot DTB; pixel format and row stride remain unverified
 - Touch: FocalTech FT8756 over Qualcomm GENI SPI (QUP SE6, 0xa80000)
 
@@ -42,7 +43,7 @@ ODESSA_DTB=/path/to/odessa/boot_b-unpacked/dtb \\
 shim/build.sh
 ```
 
-The current shim still contains inherited SWEET hardware assumptions and is not safe or ready to boot on Odessa. A successful build only checks compilation and boot-image packaging on the host; it does not establish device compatibility. Do not boot its output until the Odessa-specific shim, memory map, register accesses, and XNU handoff have been reviewed and verified.
+The shim entry point now disables the inherited loader, UFS, MMU benchmark, GIC, PSCI, and automatic-reset probes; exception handling also waits instead of invoking the inherited restart routine. It is only a host-reviewed audit baseline: the diagnostic still writes to a framebuffer whose pixel format and stride are unverified, and legacy SWEET implementations remain elsewhere in the image. A successful build only checks compilation and boot-image packaging on the host; it does not establish device compatibility. Do not boot its output until the Odessa-specific shim, memory map, framebuffer, register accesses, and XNU handoff have been reviewed and verified.
 
 ## Current status
 
@@ -50,7 +51,7 @@ The current shim still contains inherited SWEET hardware assumptions and is not 
 | --- | --- |
 | Fork and target identification | Complete |
 | Read-only hardware inventory | Started; sanitized facts are recorded above |
-| Odessa-specific shim and boot-image packaging | Not complete; host package validation works, but the shim still contains unverified SWEET hardware code and must not be booted |
+| Odessa-specific shim and boot-image packaging | Not complete; the entry point disables inherited hardware probes, but framebuffer parameters and legacy code remain unverified; host package validation works |
 | Odessa XNU machine configuration | Not implemented |
 | iOS root image for Odessa | Not built |
 | Kernel boot on the Moto G9 Plus | Not tested |
