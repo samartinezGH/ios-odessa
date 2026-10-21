@@ -12,7 +12,7 @@ Checks:
   3. Shell script syntax:
      - All tools/*.sh, shim/*.sh, and xnu/patches/*.sh pass bash -n check.
 """
-import argparse, glob, os, py_compile, re, subprocess, sys
+import argparse, glob, json, os, py_compile, re, subprocess, sys
 
 REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
@@ -125,6 +125,55 @@ def validate_shell_scripts(verbose=False):
     return True
 
 
+def validate_odessa_profile(verbose=False):
+    """Keep the Odessa evidence profile explicit and non-bootable until verified."""
+    path = os.path.join(REPO_ROOT, 'boards/odessa/profile.json')
+    try:
+        with open(path, encoding='utf-8') as f:
+            profile = json.load(f)
+    except (OSError, json.JSONDecodeError) as e:
+        print(red(f"[-] Odessa profile could not be read: {e}"))
+        return False
+
+    device = profile.get('device', {})
+    boot = profile.get('stock_boot_b_observation', {})
+    implementation = profile.get('implementation_status', {})
+    errors = []
+    if (device.get('model'), device.get('codename')) != ('XT2087-1', 'odessa'):
+        errors.append('target identity must remain Moto G9 Plus XT2087-1 (odessa)')
+    if profile.get('status') != 'inventory_only':
+        errors.append('profile status must stay inventory_only until the board port is implemented')
+    if not implementation or any(implementation.values()):
+        errors.append('unimplemented Odessa boot milestones must not be marked complete')
+    build_path = os.path.join(REPO_ROOT, 'shim/build.sh')
+    with open(build_path, encoding='utf-8') as f:
+        build_script = f.read()
+    boot_args = {
+        'android_boot_header_version': (2, '--header_version 2'),
+        'page_size': (4096, '--pagesize 4096'),
+        'kernel_address': ('0x00008000', '--kernel_offset 0x8000'),
+        'ramdisk_address': ('0x01000000', '--ramdisk_offset 0x1000000'),
+        'tags_address': ('0x00000100', '--tags_offset 0x100'),
+        'dtb_address': ('0x01f00000', '--dtb_offset 0x1f00000'),
+    }
+    if any(boot.get(key) != value or token not in build_script
+           for key, (value, token) in boot_args.items()):
+        errors.append('shim boot-image layout no longer matches the observed boot_b header')
+    if '--os_version "$OS_VERSION"' not in build_script or '--os_patch_level "$OS_PATCH_LEVEL"' not in build_script:
+        errors.append('shim boot-image metadata must be supplied through the observed OS version settings')
+    if 'OS_VERSION="${OS_VERSION:-16.0.0}"' not in build_script or 'OS_PATCH_LEVEL="${OS_PATCH_LEVEL:-2025-08}"' not in build_script:
+        errors.append('shim OS metadata defaults must match the observed active-slot boot image')
+    if errors:
+        print(red("[-] Odessa profile validation failed:"))
+        for err in errors:
+            print(f"    - {err}")
+        return False
+    if verbose:
+        print(f"    [OK] {os.path.relpath(path, REPO_ROOT)}: target identity and implementation status")
+    print(green("[✓] Validated Odessa evidence profile (inventory only; no boot/write claims)"))
+    return True
+
+
 def main():
     ap = argparse.ArgumentParser(description="Validate repository integrity, patches, and scripts.")
     ap.add_argument('-v', '--verbose', action='store_true', help='Show detailed per-file output')
@@ -134,8 +183,9 @@ def main():
     ok_patches = validate_patches(a.verbose)
     ok_python = validate_python_scripts(a.verbose)
     ok_shell = validate_shell_scripts(a.verbose)
+    ok_odessa = validate_odessa_profile(a.verbose)
 
-    if ok_patches and ok_python and ok_shell:
+    if ok_patches and ok_python and ok_shell and ok_odessa:
         print(bold(green("\nAll repository integrity checks PASSED successfully!")))
         return 0
     else:

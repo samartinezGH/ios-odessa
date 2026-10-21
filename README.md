@@ -23,6 +23,10 @@ The current target was identified from a live device-tree dump as:
 
 These are initial observations from the device tree, not a complete hardware bring-up. The raw dump is intentionally not included because it contains device identifiers and network addresses. Verify every address, clock, interrupt, memory reservation, and peripheral initialization sequence before using it in kernel code.
 
+The sanitized, machine-readable inventory is in [`boards/odessa/profile.json`](boards/odessa/profile.json). It is an evidence record, not a boot configuration: all Odessa implementation flags remain false until the corresponding hardware path is verified and implemented.
+
+The backed-up active-slot `boot_b` has Android boot header v2, 4096-byte pages, and embedded-DTB addressing that matches the current shim packager's header layout. Its encoded OS metadata decodes to Android 16.0.0 / 2025-08, so `shim/build.sh` now defaults to those observed values while allowing explicit environment overrides. This does not make the inherited SWEET shim or ADT safe to boot on Odessa.
+
 ## Current status
 
 | Area | Status |

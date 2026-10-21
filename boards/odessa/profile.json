@@ -1,0 +1,69 @@
+{
+  "schema_version": 1,
+  "status": "inventory_only",
+  "device": {
+    "manufacturer": "Motorola",
+    "marketing_name": "Moto G9 Plus",
+    "model": "XT2087-1",
+    "codename": "odessa",
+    "device_tree_compatible": "qcom,sdmmagpie"
+  },
+  "device_tree_observations": {
+    "source": "Live device-tree dump captured 2026-10-20; sanitized summary",
+    "cpu_nodes": 8,
+    "psci_method": "smc",
+    "memory_regions": [
+      { "base": "0x80000000", "size": "0x80000000" },
+      { "base": "0x100000000", "size": "0x7dd00000" }
+    ],
+    "gic": {
+      "version": 3,
+      "distributor_base": "0x17a00000",
+      "redistributor_base": "0x17a60000"
+    },
+    "ufs_controller_base": "0x01d84000",
+    "display": {
+      "panel": "TXD FT8756",
+      "width": 1080,
+      "height": 2400
+    },
+    "touch": {
+      "controller": "FocalTech FT8756",
+      "transport": "Qualcomm GENI SPI",
+      "qup_se": 6,
+      "controller_base": "0x00a80000"
+    }
+  },
+  "recovery_snapshot": {
+    "captured": "2026-10-21",
+    "active_slot": "_b",
+    "dtb_index": 0,
+    "dtbo_index": 2,
+    "mem_total_kib": 3734384,
+    "note": "Recovery properties disagree on Android release and SDK. The boot header encodes Android 16.0.0 / 2025-08, but the installed system build ID still needs verification."
+  },
+  "stock_boot_b_observation": {
+    "source": "Read-only backup of /dev/block/by-name/boot_b; parsed locally",
+    "android_boot_header_version": 2,
+    "header_size": 1660,
+    "page_size": 4096,
+    "kernel_address": "0x00008000",
+    "ramdisk_address": "0x01000000",
+    "tags_address": "0x00000100",
+    "dtb_address": "0x01f00000",
+    "kernel_size_bytes": 35289112,
+    "ramdisk_size_bytes": 4122753,
+    "dtb_is_embedded": true,
+    "encoded_os_version": "0x20000198",
+    "decoded_android_version": "16.0.0",
+    "decoded_os_patch_level": "2025-08"
+  },
+  "implementation_status": {
+    "odessa_shim": false,
+    "odessa_apple_device_tree": false,
+    "odessa_xnu_machine_config": false,
+    "odessa_storage_driver": false,
+    "odessa_boot_image": false,
+    "boot_tested_on_device": false
+  }
+}
