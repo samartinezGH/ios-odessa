@@ -94,6 +94,25 @@
     ],
     "note": "These are observations from the running Android kernel. They establish two CPU sibling groups and the listed features; they do not verify XNU startup, timer routing, or PSCI CPU_ON behavior."
   },
+  "phase1_architecture_audit": {
+    "captured": "2026-10-21",
+    "running_kernel": {
+      "page_size_bytes": 4096,
+      "config_arm64_4k_pages": true,
+      "config_arm64_va_bits": 39,
+      "source": "Read-only Android getconf and /proc/config.gz"
+    },
+    "cpu_fdt_affinity_values": ["0x0", "0x100", "0x200", "0x300", "0x400", "0x500", "0x600", "0x700"],
+    "linux_cpu_sibling_groups": ["0-5", "6-7"],
+    "fdt_cpu_map_clusters": {"cluster0": 6, "cluster1": 2},
+    "pointer_authentication": "unverified; do not assume support",
+    "xnu_16k_granule_compatibility": "unverified; Android's active kernel is configured for 4K pages",
+    "dma_safety": "unverified; Linux ARM SMMU support does not establish XNU mapping or ownership",
+    "boot_security_state": "conflicting Android properties and prior raw kernel command-line observation; confirm in bootloader before device tests",
+    "phase1_matrix": "PHASE1_HARDWARE_MATRIX.md",
+    "partition_map": "partition-map.json",
+    "note": "The current tools/mkadt_odessa.py copies CPU reg affinities but does not preserve the FDT cpu-map cluster structure; do not enable secondary CPUs until this is resolved."
+  },
   "recovery_snapshot": {
     "captured": "2026-10-21",
     "recovery_environment": {
