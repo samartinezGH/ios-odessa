@@ -148,12 +148,15 @@ def validate_odessa_profile(verbose=False):
         errors.append('unimplemented Odessa boot milestones must not be marked complete')
     panel = dtbo.get('panel_overlay', {})
     entry = dtbo.get('reported_entry', {})
+    splash = profile.get('device_tree_observations', {}).get('boot_splash_reservation', {})
     if (dtbo.get('entry_count'), dtbo.get('recovery_reported_applied_index'), dtbo.get('indexing')) != (3, 2, 'zero_based'):
         errors.append('DTBO table count and applied zero-based index must match the local recovery observation')
     if (entry.get('id'), entry.get('revision')) != ('0x00000049', '0x000000c0'):
         errors.append('reported DTBO entry ID/revision must match the backed-up index 2 entry')
     if (panel.get('name'), panel.get('controller'), panel.get('mode')) != ('mipi_mot_vid_txd_1080p_681', 'FT8756', 'dsi_video_mode'):
         errors.append('reported Odessa overlay must identify the observed FT8756 TXD video panel')
+    if (splash.get('base'), splash.get('size'), splash.get('pixel_format'), splash.get('stride_bytes')) != ('0x9c000000', '0x01700000', None, None):
+        errors.append('splash reservation must match the boot DTB and leave unknown pixel layout unset')
     build_path = os.path.join(REPO_ROOT, 'shim/build.sh')
     with open(build_path, encoding='utf-8') as f:
         build_script = f.read()
@@ -174,6 +177,16 @@ def validate_odessa_profile(verbose=False):
         errors.append('shim OS metadata defaults must match the observed active-slot boot image')
     if 'ODESSA_DTB="${ODESSA_DTB:-../dtb/boot_unpacked/dtb}"' not in build_script or '--dtb "$ODESSA_DTB"' not in build_script:
         errors.append('shim must consume an explicitly supplied Odessa stock DTB')
+    if 'CROSS_COMPILE="${CROSS_COMPILE:-aarch64-none-elf-}"' not in build_script:
+        errors.append('shim default cross-compiler must target bare-metal AArch64 ELF')
+    if 'LD="${LD:-${CROSS_COMPILE}ld}"' not in build_script or '$LD -static -T shim.ld --build-id=none' not in build_script:
+        errors.append('shim must link ELF objects with the target linker directly')
+    if 'MKBOOTIMG="${MKBOOTIMG:-mkbootimg}"' not in build_script or '"$MKBOOTIMG" --header_version 2' not in build_script:
+        errors.append('shim must allow an explicit Android mkbootimg executable')
+    if 'validate-odessa-bootimg.py out/shim-boot.img out/Image out/ramdisk.bin "$ODESSA_DTB"' not in build_script:
+        errors.append('shim must validate packaged boot-image components against their host inputs')
+    if '-fno-jump-tables' not in build_script:
+        errors.append('freestanding shim objects must avoid absolute string jump-table relocations')
     if 'end_hex=$($NM out/shim.elf' not in build_script or "int(sys.argv[1], 16)" not in build_script:
         errors.append('shim image sizing must use the portable ELF end-symbol conversion')
     if errors:
