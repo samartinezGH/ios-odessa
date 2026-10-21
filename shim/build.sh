@@ -13,7 +13,7 @@ MKBOOTIMG="${MKBOOTIMG:-mkbootimg}"
 ODESSA_DTB="${ODESSA_DTB:-../dtb/boot_unpacked/dtb}"
 OS_VERSION="${OS_VERSION:-16.0.0}"
 OS_PATCH_LEVEL="${OS_PATCH_LEVEL:-2025-08}"
-CFLAGS="-O2 -ffreestanding -nostdlib -fno-pic -mgeneral-regs-only -mstrict-align -fno-stack-protector -fno-jump-tables -Wall -Wextra"
+CFLAGS="-O2 -ffreestanding -nostdlib -fno-pic -mgeneral-regs-only -mstrict-align -fno-stack-protector -fno-jump-tables -ffunction-sections -fdata-sections -Wall -Wextra"
 
 require_tool() {
 	command -v "$1" >/dev/null 2>&1 || {
@@ -40,8 +40,12 @@ done
 abs=$($READELF -r out/shim.o out/console.o out/mmu.o out/fdt.o out/loader.o out/ufs.o | grep -c ABS64 || true)
 [ "$abs" = 0 ] || { echo "error: $abs absolute relocations in C objects" >&2; exit 1; }
 
-$LD -static -T shim.ld --build-id=none --no-warn-rwx-segments -N \
+$LD -static -T shim.ld --build-id=none --gc-sections --no-warn-rwx-segments -N \
 	out/start.o out/shim.o out/console.o out/mmu.o out/fdt.o out/loader.o out/ufs.o -o out/shim.elf
+if $NM out/shim.elf | grep -Eq '[[:space:]](loader_boot|test_ufs|mmu_enable|test_gic|reset)$'; then
+	echo "error: inherited loader/hardware/reset routine remains in the Odessa audit image" >&2
+	exit 1
+fi
 $OBJCOPY -O binary out/shim.elf out/Image
 # ABL copies the file; pad to image_size so .bss/stacks exist as zeroed bytes.
 end_hex=$($NM out/shim.elf | awk '$3=="_end"{print $1}')
