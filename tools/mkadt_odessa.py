@@ -268,7 +268,23 @@ def inspect_target(root):
     if not freq_raw or len(freq_raw) != 4:
         raise ValueError('generic timer frequency is missing from active FDT')
     timebase = struct.unpack('>I', freq_raw)[0]
-    return cpu_nodes, gic_regs, virtual_intid, timebase
+    ufs = next((n for n in walk(root)
+                if 'qcom,ufshc' in string_list(n.props.get('compatible', b''))), None)
+    if ufs is None or ufs.parent is None:
+        raise ValueError('active FDT has no Qualcomm UFS host controller')
+    if ufs.props.get('status', b'').split(b'\0')[0] not in (b'', b'okay', b'ok'):
+        raise ValueError('Odessa UFS host controller is disabled in the active FDT')
+    ua = cell_count(ufs.parent, '#address-cells', 2)
+    us = cell_count(ufs.parent, '#size-cells', 1)
+    ufs_regs = decode_tuples(ufs.props.get('reg', b''), ua, us, ufs.path, 'reg')
+    reg_names = string_list(ufs.props.get('reg-names', b''))
+    if len(ufs_regs) != len(reg_names) or 'ufs_mem' not in reg_names:
+        raise ValueError('UFS host controller has an unexpected named register map')
+    ufs_base, ufs_size = ufs_regs[reg_names.index('ufs_mem')]
+    lanes_raw = ufs.props.get('lanes-per-direction', b'')
+    if len(lanes_raw) != 4 or struct.unpack('>I', lanes_raw)[0] != 1:
+        raise ValueError('UFS host controller does not report one lane per direction')
+    return cpu_nodes, gic_regs, virtual_intid, timebase, (ufs_base, ufs_size)
 
 
 def u32(value):
@@ -290,7 +306,7 @@ def node(name, props=(), children=()):
     return out
 
 
-def build_adt(memory_range, cpu_nodes, gic_regs, virtual_intid, timebase, seed=None):
+def build_adt(memory_range, cpu_nodes, gic_regs, virtual_intid, timebase, ufs_regs, seed=None):
     if memory_range[0] < HIGHMEM_CUTOFF:
         raise ValueError('refusing to expose low memory as a single XNU range')
     seed = seed if seed is not None else secrets.token_bytes(64)
@@ -322,13 +338,15 @@ def build_adt(memory_range, cpu_nodes, gic_regs, virtual_intid, timebase, seed=N
                              ('#address-cells', u32(2)), ('#size-cells', u32(2)),
                              ('ranges', struct.pack('<3Q', 0, SOC_BASE, 0x100000000-SOC_BASE))],
                   [gic])
+    ufs = node('odessa-ufs', [ph(), ('compatible', cstr('qcom,ufshc')),
+                              ('reg', struct.pack('<2Q', *ufs_regs))])
     return node('device-tree', [
         ph(), ('compatible', cstr('D22AP') + cstr('iPhone10,3') +
                cstr('motorola,odessa') + cstr('qcom,sdmmagpie') + cstr('AppleARM')),
         ('model', cstr('iPhone10,3')), ('target-type', cstr('D22')),
         ('target-sub-type', cstr('D22AP')), ('manufacturer', cstr('Apple Inc.')),
         ('#address-cells', u32(2)), ('#size-cells', u32(2)),
-    ], [chosen, cpus, arm_io])
+    ], [chosen, cpus, arm_io, ufs])
 
 
 def main():
@@ -340,8 +358,8 @@ def main():
         root, blob, reserve_off, total = parse_fdt(open(args.live_fdt, 'rb').read())
         memory, fixed, dynamic, memreserve = fdt_memory_and_reservations(root, blob, reserve_off, total)
         ram = select_kernel_ram(memory, fixed, dynamic, memreserve)
-        cpus, gic, timer_irq, timebase = inspect_target(root)
-        result = adt.serialize(build_adt(ram, cpus, gic, timer_irq, timebase))
+        cpus, gic, timer_irq, timebase, ufs = inspect_target(root)
+        result = adt.serialize(build_adt(ram, cpus, gic, timer_irq, timebase, ufs))
         # Verify the serialized ADT and key safety invariants before writing it.
         parsed, end = adt.parse(result)
         assert end == len(result)
@@ -353,6 +371,7 @@ def main():
         print(f'XNU RAM candidate: base={ram[0]:#x} size={ram[1]:#x} end={ram[0]+ram[1]:#x}')
         print(f'CPU nodes: {len(cpus)}; boot CPU affinity: {cpus[0][1]:#x}; secondary CPUs are described as stopped')
         print(f'GICv3: dist={gic[0][0]:#x} redist={gic[1][0]:#x}; virtual timer PPI={timer_irq}; timebase={timebase} Hz')
+        print(f'UFS host: base={ufs[0]:#x} size={ufs[1]:#x}; driver enabled only by rd=ufsroot0')
         print('This is a host-generated bring-up ADT, not a bootable or device-tested image.')
     except (OSError, ValueError, AssertionError, StopIteration, struct.error) as exc:
         print(f'error: refusing to generate Odessa ADT: {exc}', file=sys.stderr)
