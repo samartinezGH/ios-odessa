@@ -32,7 +32,7 @@ Evidence labels:
 | Partition map | Read-only GPT inventory is in [`partition-map.json`](partition-map.json); it records six UFS LUNs and A/B boot-critical partitions. | Observed. Starts/sizes are in Linux 512-byte sectors. No partition was opened for writing. `userdata` is the existing Android user-data partition; never use it as an iOS root image target. |
 | Boot image | Active `boot_b`: Android boot header v2, 4096-byte page, embedded DTB; active slot `_b`. Applied DTBO index 2 of 3, entry board ID `0x49`, revision `0xc0`. | Observed from stock metadata and read-only Android state. This does not validate an XNU boot image or display handoff. |
 | Display | Active panel is TXD FT8756, 1080×2400, DSI video mode at 60 Hz in recovery. Recovery scanout is XBGR8888, linear, pitch 4352. | Observed for recovery only. Bootloader splash `cont_splash_region` begins at `0x9c000000`; its pixel format, stride, cache policy, and ownership are unresolved. Recovery scanout details cannot be substituted for splash details. |
-| Touch | FocalTech FT8756 is attached under Qualcomm GENI SPI QUP SE6 at `0x00a80000`, max frequency 20 MHz, reset GPIO 8, IRQ GPIO 9, up to 10 contacts, coordinates 1080×2400. | Observed from active FDT. The node is panel-conditional, not unconditionally `okay`. GPIO controller/pinctrl are identified, but rail enablement, firmware, IRQ polarity/trigger, and XNU SPI/GENI behavior remain unresolved. |
+| Touch | FocalTech FT8756 is attached under Qualcomm GENI SPI QUP SE6 at `0x00a80000`, max frequency 20 MHz, reset GPIO 8, IRQ GPIO 9, up to 10 contacts, coordinates 1080×2400. Controller clocks are named `se-clk`, `m-ahb`, and `s-ahb`. | Observed from active FDT. The node is panel-conditional, not unconditionally `okay`. GPIO controller/pinctrl are identified, but rail enablement, firmware, IRQ polarity/trigger, and XNU SPI/GENI behavior remain unresolved. |
 | PMIC / keys | Device tree includes PM6150 and PM6150L PMIC nodes over Qualcomm SPMI, plus Qualcomm RPMh clock controller. GPIO keys include volume-up and assist; power-on controller is represented under PMIC PON. | Observed topology. Exact rail votes, RPMh/TCS protocol and key events are not implemented or verified in XNU. |
 | USB | Live FDT contains Qualcomm DWC3, QUSB2 HS PHY and QMP SuperSpeed PHY resources; Android currently reports `mtp,adb`. | Observed. This describes Android's active mode, not a safe XNU USB initialization sequence. USB driver and PHY handoff remain unresolved. |
 
@@ -47,3 +47,9 @@ Evidence labels:
 7. Resolve the boot-state property/cmdline discrepancy at the bootloader without changing or flashing partitions.
 
 **Phase 1 audit result:** the requested hardware comparison and read-only storage inventory are now documented, including all known unknowns. The Phase 1 *engineering acceptance gate* remains open: the unresolved items above prohibit claiming an XNU-ready hardware profile or a bootable image.
+
+## Primary source references
+
+- Motorola [sdmmagpie device tree](https://github.com/MotorolaMobilityLLC/kernel-msm/blob/android-11-release-rpa31.q2-59-17/arch/arm64/boot/dts/qcom/sdmmagpie.dtsi)
+- Motorola [Qualcomm UFS host implementation](https://github.com/MotorolaMobilityLLC/kernel-msm/blob/android-11-release-rpa31.q2-59-17/drivers/scsi/ufs/ufs-qcom.c)
+- Motorola [Qualcomm UFS PHY implementation](https://github.com/MotorolaMobilityLLC/kernel-msm/blob/android-11-release-rpa31.q2-59-17/drivers/phy/qualcomm/phy-qcom-ufs.c)
