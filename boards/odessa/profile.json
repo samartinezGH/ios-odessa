@@ -49,6 +49,24 @@
     "dtb_index": 0,
     "dtbo_index": 2,
     "mem_total_kib": 3734384,
+    "display": {
+      "source": "Read-only recovery DRM sysfs and debugfs",
+      "connector": "DSI-1",
+      "enabled": true,
+      "panel_name": "txd_ft8756_fhd_vid",
+      "mode": "1080x2400 at 60 Hz",
+      "active_recovery_scanout": {
+        "fourcc": "XB24",
+        "drm_format": "DRM_FORMAT_XBGR8888",
+        "modifier": "linear",
+        "width": 1080,
+        "height": 2400,
+        "pitch_bytes": 4352
+      },
+      "boot_splash_pixel_format": null,
+      "boot_splash_stride_bytes": null,
+      "note": "The active recovery scanout is a separate runtime allocation. Its XB24 format and 4352-byte pitch do not establish the bootloader splash buffer layout in cont_splash_region."
+    },
     "note": "Recovery properties disagree on Android release and SDK. The boot header encodes Android 16.0.0 / 2025-08, but the installed system build ID still needs verification."
   },
   "stock_boot_b_observation": {
