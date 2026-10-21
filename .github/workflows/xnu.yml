@@ -11,7 +11,7 @@ on:
         default: DEVELOPMENT
       machine_config:
         description: xnu MACHINE_CONFIG (SWEET or experimental ODESSA)
-        default: SWEET
+        default: ODESSA
       keep_going:
         description: make -k (collect all compile errors in one run)
         default: "true"
