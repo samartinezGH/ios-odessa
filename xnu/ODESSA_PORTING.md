@@ -53,8 +53,8 @@ otherwise verified. The existing Sweet configuration remains unchanged.
 5. Add additional CPUs only after decoding affinity levels and checking MIDR,
    cache topology, and PSCI `CPU_ON` behavior. Do not reuse Sweet's topology
    limits.
-6. Add read-only UFS and a RAM-disk root path; only then investigate the
-   prepared iOS userland image.
+6. Add read-only UFS and validate the controller's handoff/DMA path before
+   using the prepared iOS userland image as a root volume.
 
 ## Current gate
 
@@ -97,6 +97,20 @@ inputs for a device image without substantial replacement:
   captured read-only; use its reservation and allocation ranges, and do not
   derive a contiguous XNU RAM map by subtracting only obvious fixed carve-outs.
   Bootloader and secure-firmware ownership also matter.
+
+## Experimental UFS scaffold
+
+`xnu/patches/0083-odessa-readonly-ufs.patch` adapts the project's read-only
+Qualcomm UFSHCI block driver as an Odessa-only device. It is selected only by
+`rd=ufsroot0`; it checks that the controller is enabled and idle, verifies
+64-bit DMA capability when the XNU allocation is above 4 GiB, then uses a
+single polled request list and refuses block writes. The Odessa ADT generator
+derives the UFS memory range from the active FDT and emits `/odessa-ufs` for
+the driver. This is compile/bring-up scaffolding: the QCOM PHY/ICE state,
+SMMU/IOMMU mapping, DMA coherence, and ABL controller handoff have not been
+verified on Odessa. Do not set `rd=ufsroot0` against the current encrypted
+Android userdata and do not overwrite userdata without an explicit, separate
+approval for that exact operation.
 
 The next engineering gate is observable, controlled XNU entry: verify the
 ABL handoff contract and boot arguments, add a safe diagnostic path, then
