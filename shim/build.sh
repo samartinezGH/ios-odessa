@@ -9,6 +9,7 @@ LD="${LD:-${CROSS_COMPILE}ld}"
 OBJCOPY="${OBJCOPY:-${CROSS_COMPILE}objcopy}"
 READELF="${READELF:-${CROSS_COMPILE}readelf}"
 NM="${NM:-${CROSS_COMPILE}nm}"
+OBJDUMP="${OBJDUMP:-${CROSS_COMPILE}objdump}"
 MKBOOTIMG="${MKBOOTIMG:-mkbootimg}"
 ODESSA_DTB="${ODESSA_DTB:-../dtb/boot_unpacked/dtb}"
 OS_VERSION="${OS_VERSION:-16.0.0}"
@@ -22,7 +23,7 @@ require_tool() {
 	}
 }
 
-for tool in "$CC" "$LD" "$OBJCOPY" "$READELF" "$NM" "$MKBOOTIMG" python3 gcc awk grep cpio gzip truncate; do
+for tool in "$CC" "$LD" "$OBJCOPY" "$READELF" "$NM" "$OBJDUMP" "$MKBOOTIMG" python3 gcc awk grep cpio gzip truncate; do
 	require_tool "$tool"
 done
 [ -f "$ODESSA_DTB" ] || {
@@ -32,18 +33,22 @@ done
 }
 
 mkdir -p out
-for f in start.S shim.c console.c mmu.c fdt.c loader.c ufs.c; do
+for f in start.S odessa_audit.c console.c; do
 	$CC ${TARGET_FLAGS:+$TARGET_FLAGS} $CFLAGS -c $f -o out/${f%.*}.o
 done
 # The image runs wherever ABL puts it with no relocation pass: only the
 # header's image_size (start.o, linked at 0) may be an absolute address.
-abs=$($READELF -r out/shim.o out/console.o out/mmu.o out/fdt.o out/loader.o out/ufs.o | grep -c ABS64 || true)
+abs=$($READELF -r out/odessa_audit.o out/console.o | grep -c ABS64 || true)
 [ "$abs" = 0 ] || { echo "error: $abs absolute relocations in C objects" >&2; exit 1; }
 
 $LD -static -T shim.ld --build-id=none --gc-sections --no-warn-rwx-segments -N \
-	out/start.o out/shim.o out/console.o out/mmu.o out/fdt.o out/loader.o out/ufs.o -o out/shim.elf
-if $NM out/shim.elf | grep -Eq '[[:space:]](loader_boot|test_ufs|mmu_enable|test_gic|reset)$'; then
-	echo "error: inherited loader/hardware/reset routine remains in the Odessa audit image" >&2
+	out/start.o out/odessa_audit.o out/console.o -o out/shim.elf
+if $NM out/shim.elf | grep -Eq '[[:space:]](loader_boot|test_ufs|mmu_enable|test_gic|test_smp|find_gicr|reset|secondary_main)$'; then
+	echo "error: inherited loader/hardware/reset/secondary routine remains in the Odessa audit image" >&2
+	exit 1
+fi
+if $OBJDUMP -d out/shim.elf | grep -Eq '[[:space:]]smc([[:space:]]|$)'; then
+	echo "error: PSCI/SMC call remains in the Odessa audit image" >&2
 	exit 1
 fi
 $OBJCOPY -O binary out/shim.elf out/Image
