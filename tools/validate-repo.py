@@ -145,6 +145,10 @@ def validate_odessa_profile(verbose=False):
     if (device.get('model'), device.get('codename')) != ('XT2087-1', 'odessa'):
         errors.append('target identity must remain Moto G9 Plus XT2087-1 (odessa)')
     active_scanout = display.get('active_recovery_scanout', {})
+    recovery_env = recovery.get('recovery_environment', {})
+    if (recovery_env.get('product_name'), recovery_env.get('kernel_release'),
+            recovery_env.get('mem_available_kib')) != ('infinity_odessa', '4.14.190-FlopX-Kernel', 3383784):
+        errors.append('recovery environment fields must match the sanitized read-only ADB snapshot')
     if (display.get('connector'), display.get('enabled'), display.get('panel_name'), display.get('mode')) != ('DSI-1', True, 'txd_ft8756_fhd_vid', '1080x2400 at 60 Hz'):
         errors.append('recovery display observation must match the read-only DRM connector report')
     if (active_scanout.get('fourcc'), active_scanout.get('drm_format'), active_scanout.get('modifier'), active_scanout.get('pitch_bytes')) != ('XB24', 'DRM_FORMAT_XBGR8888', 'linear', 4352):
