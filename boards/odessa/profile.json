@@ -25,7 +25,7 @@
       "source": "Live device-tree dump captured 2026-10-20; sanitized summary",
       "controller_compatible": "qcom,ufshc",
       "controller_base": "0x01d84000",
-      "controller_size": "0x00030000",
+      "controller_size": "0x00003000",
       "controller_status": "okay",
       "controller_reg_names": ["ufs_mem", "ufs_ice"],
       "phy_compatible": "qcom,ufs-phy-qmp-v3",
