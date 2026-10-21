@@ -106,6 +106,43 @@ diff --git a/pexpert/arm/pe_fiq.c b/pexpert/arm/pe_fiq.c
 +#if HAS_GIC_V3 && !defined(ODESSA)
  #define GICR_WAKE_TIMEOUT_NS (1000000000ULL) // timeout for redistributor wakeup (default 1s)
 
+diff --git a/osfmk/arm64/machine_routines.c b/osfmk/arm64/machine_routines.c
+--- a/osfmk/arm64/machine_routines.c
++++ b/osfmk/arm64/machine_routines.c
+@@ -2180,12 +2180,12 @@
+ 	return dec;
+ }
+ 
+-#if defined(SWEET)
++#if defined(SWEET) || defined(ODESSA)
+ /*
+  * sweet: arm_vm_init() calls this unconditionally; Apple's definition (it
+  * enters the PPL/monitor) ships only in the closed per-SoC library. There is
+  * no monitor on SWEET.
+  */
+ void
+ ml_enable_monitor(void)
+ {
+ }
+-#endif /* SWEET */
++#endif /* SWEET || ODESSA */
+ 
+ boolean_t
+ ml_get_timer_pending(void)
+
+diff --git a/osfmk/kern/exception.c b/osfmk/kern/exception.c
+--- a/osfmk/kern/exception.c
++++ b/osfmk/kern/exception.c
+@@ -819,8 +819,8 @@
+ #endif /* __has_feature(ptrauth_calls) */
+ 	return exception_triage_thread(exception, code, codeCnt, thread);
+ }
+ 
+-#if defined(ARM64_BOARD_CONFIG_SWEET)
++#if defined(ARM64_BOARD_CONFIG_SWEET) || defined(ARM64_BOARD_CONFIG_ODESSA)
+ #include <vm/vm_shared_region.h>
+ #include <arm/thread.h>
+ 
 diff --git a/osfmk/arm64/proc_reg.h b/osfmk/arm64/proc_reg.h
 --- a/osfmk/arm64/proc_reg.h
 +++ b/osfmk/arm64/proc_reg.h
