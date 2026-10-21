@@ -17,23 +17,20 @@ diff --git a/makedefs/MakeInc.def b/makedefs/MakeInc.def
  
  
  #
-@@ -263,8 +264,8 @@ export ARCH_STRING_FOR_CURRENT_MACHINE_CONFIG := $(shell echo $(CURRENT_ARCH_C
- export ARCH_STRING_FOR_CURRENT_MACHINE_CONFIG := arm64e
- endif
+@@ -262,4 +263,4 @@
  ifneq ($(filter arm64,$(ARCH_STRING_FOR_CURRENT_MACHINE_CONFIG)),)
 -# sweet's Cortex-A76/A55 have no pointer authentication: stay plain arm64
 -ifneq ($(CURRENT_MACHINE_CONFIG),SWEET)
 +# SM7150 Kryo 470: use the generic arm64 ABI without pointer authentication.
 +ifeq ($(filter SWEET ODESSA,$(CURRENT_MACHINE_CONFIG)),)
  export ARCH_STRING_FOR_CURRENT_MACHINE_CONFIG := arm64e
- endif
- endif
 
 diff --git a/pexpert/pexpert/arm64/Makefile b/pexpert/pexpert/arm64/Makefile
 --- a/pexpert/pexpert/arm64/Makefile
 +++ b/pexpert/pexpert/arm64/Makefile
-@@ -19,5 +19,6 @@ PRIVATE_KERNELFILES = \
+@@ -19,6 +19,7 @@ PRIVATE_KERNELFILES = \
  	VMAPPLE.h \
+ 	BCM2837.h \
 -	SWEET.h
 +	SWEET.h \
 +	ODESSA.h
@@ -44,10 +41,7 @@ diff --git a/pexpert/pexpert/arm64/Makefile b/pexpert/pexpert/arm64/Makefile
 diff --git a/pexpert/pexpert/arm64/board_config.h b/pexpert/pexpert/arm64/board_config.h
 --- a/pexpert/pexpert/arm64/board_config.h
 +++ b/pexpert/pexpert/arm64/board_config.h
-@@ -108,6 +108,17 @@
- #define CORE_NCTRS                     8 /* Placeholder; KPC is not enabled for this target */
- #endif  /* ARM64_BOARD_CONFIG_SWEET */
- 
+@@ -111,1 +111,12 @@
 +#ifdef ARM64_BOARD_CONFIG_ODESSA
 +#include <pexpert/arm64/ODESSA.h>
 +
@@ -60,7 +54,6 @@ diff --git a/pexpert/pexpert/arm64/board_config.h b/pexpert/pexpert/arm64/board_
 +#endif  /* ARM64_BOARD_CONFIG_ODESSA */
 +
  #ifdef ARM64_BOARD_CONFIG_VMAPPLE
- #include <pexpert/arm64/VMAPPLE.h>
  
 diff --git a/pexpert/pexpert/arm64/ODESSA.h b/pexpert/pexpert/arm64/ODESSA.h
 new file mode 100644
@@ -148,14 +141,14 @@ new file mode 100644
 +#
 +# All rights reserved.  The CMU software License Agreement
 +# specifies the terms and conditions for use and redistribution.
-+#  
++#
 +######################################################################
 +#
 +#  Master Apple configuration file (see the master machine independent
 +#  configuration file for a description of the file format).
 +#
 +######################################################################
-+#  
++#
 +#  Standard Apple OS Configurations:
 +#  -------- ----- -- ---------------
 +#
