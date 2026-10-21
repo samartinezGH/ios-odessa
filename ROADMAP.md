@@ -8,9 +8,11 @@ This roadmap tracks the work required to move the inherited iOS-sweet/XNU bring-
 - [x] Collect an initial live device-tree dump through read-only inspection.
 - [ ] Record the exact regional variant, stock firmware build, bootloader state, and Android slot layout.
 - [ ] Keep stock boot, DTB/DTBO, recovery, modem, persist, and calibration backups outside the repository.
-- [ ] Record a clean upstream commit and keep Odessa changes separate from inherited SWEET history.
+- [x] Record a clean upstream commit and keep Odessa changes separate from inherited SWEET history.
 
 **Acceptance:** the project identifies one exact device variant and has a reproducible, sanitized hardware-data source. No partition has been written.
+
+**Read-only snapshot (2026-10-21):** ADB currently sees XT2087-1 in recovery, active slot `_b`, DTB index 0, DTBO index 2, eight CPU entries, and 3734384 kB `MemTotal`. Recovery reports `ro.boot.flash.locked=0` and orange verified-boot state. Its build fingerprint indicates Android 11, but its release/SDK properties say 16/36, so the installed firmware build still needs independent confirmation from the normal OS or stock images. No partition content was read or written.
 
 ## Phase 1 — Build a verified hardware comparison
 
