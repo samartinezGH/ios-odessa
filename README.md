@@ -20,6 +20,7 @@ The current target was identified from a live device-tree dump as:
 - UFS controller: 0x1d84000
 - Display: TXD FT8756 panel, 1080 × 2400
 - Recovery DRM reports the DSI connector enabled at 1080 × 2400 / 60 Hz. Its active recovery scanout is `XB24` (`DRM_FORMAT_XBGR8888`, per the [Linux DRM FourCC definitions](https://github.com/torvalds/linux/blob/master/include/uapi/drm/drm_fourcc.h)) with a 4352-byte pitch, but this is a separate runtime buffer and does not identify the bootloader splash buffer's layout.
+- The recovery environment reported product `infinity_odessa`, kernel `4.14.190-FlopX-Kernel`, and 3,383,784 KiB available memory during the 2026-10-21 read-only ADB snapshot. Recovery's release/SDK/fingerprint properties do not identify the installed system build.
 - Boot splash reservation: `0x9c000000`–`0x9d700000` in the backed-up boot DTB; pixel format and row stride remain unverified
 - Touch: FocalTech FT8756 over Qualcomm GENI SPI (QUP SE6, 0xa80000)
 
