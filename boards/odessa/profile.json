@@ -102,9 +102,15 @@
       "config_arm64_va_bits": 39,
       "source": "Read-only Android getconf and /proc/config.gz"
     },
+    "linux_iomem_system_ram_ranges": [
+      ["0x80000000", "0x85700000"],
+      ["0xaf0c0000", "0x17dd00000"]
+    ],
+    "xnu_handoff_ram_candidate": {"base": "0x100000000", "size": "0x7dd00000", "basis": "active FDT plus Android /proc/iomem System RAM classification"},
     "cpu_fdt_affinity_values": ["0x0", "0x100", "0x200", "0x300", "0x400", "0x500", "0x600", "0x700"],
     "linux_cpu_sibling_groups": ["0-5", "6-7"],
     "fdt_cpu_map_clusters": {"cluster0": 6, "cluster1": 2},
+    "adt_cpu_export_policy": "boot CPU affinity 0 only; secondary CPUs omitted pending MPIDR/cluster/PSCI validation",
     "fixed_reserved_ranges": [
       ["0x85700000", "0x00600000"], ["0x85e00000", "0x001ff000"],
       ["0x85fff000", "0x00001000"], ["0x86000000", "0x00200000"],
@@ -127,13 +133,14 @@
       {"node": "secure_display_region", "base": "0x00000000", "size": "0xffffffff"},
       {"node": "linux,cma", "base": "0x00000000", "size": "0xffffffff"}
     ],
-    "pointer_authentication": "unverified; do not assume support",
-    "xnu_16k_granule_compatibility": "unverified; Android's active kernel is configured for 4K pages",
+    "pointer_authentication": "not required by this build: ODESSA is plain arm64, not arm64e, and the build does not enable PAC",
+    "xnu_16k_granule_compatibility": "Android kernel uses 4K; Arm Cortex-A76/A55 references for the Kryo 470 lineage document 16K support; exact Qualcomm ID register is not exposed, so keep first-XNU MMU startup as a runtime gate",
     "dma_safety": "unverified; Linux ARM SMMU support does not establish XNU mapping or ownership",
     "boot_security_state": "conflicting Android properties and prior raw kernel command-line observation; confirm in bootloader before device tests",
     "phase1_matrix": "PHASE1_HARDWARE_MATRIX.md",
     "partition_map": "partition-map.json",
-    "note": "Fixed and dynamic reservation ranges describe the captured FDT only; they do not prove that secure-world/XPU/firmware ownership is absent. The current tools/mkadt_odessa.py copies CPU reg affinities but does not preserve the FDT cpu-map cluster structure; do not enable secondary CPUs until this is resolved."
+    "framebuffer_policy": "disabled in Odessa audit images; no splash writes or boot-video handoff until format/stride are verified",
+    "note": "Fixed and dynamic reservations describe the captured FDT; Linux independently classifies the selected upper bank as System RAM. ABL-to-XNU ownership still requires a controlled runtime check. The ADT exports only boot CPU affinity 0; do not enable secondary CPUs until topology is resolved."
   },
   "recovery_snapshot": {
     "captured": "2026-10-21",
