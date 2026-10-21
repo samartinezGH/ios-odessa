@@ -7,7 +7,7 @@ This roadmap tracks the work required to move the inherited iOS-sweet/XNU bring-
 - [x] Create the ios-odessa fork and identify the target as Moto G9 Plus XT2087-1.
 - [x] Collect an initial live device-tree dump through read-only inspection.
 - [ ] Record the exact regional variant, stock firmware build, bootloader state, and Android slot layout.
-- [ ] Keep stock boot, DTB/DTBO, recovery, modem, persist, and calibration backups outside the repository.
+- [ ] Back up modem, persist, and calibration partitions outside the repository after validating the exact partition map and readback method.
 - [x] Back up `super` and both slots of `boot`, `dtbo`, `vbmeta`, and `recovery` outside Git; verify exact sizes and SHA-256 hashes.
 - [x] Record a clean upstream commit and keep Odessa changes separate from inherited SWEET history.
 
@@ -15,7 +15,7 @@ This roadmap tracks the work required to move the inherited iOS-sweet/XNU bring-
 
 **Read-only snapshot (2026-10-21):** ADB sees XT2087-1 in recovery, active slot `_b`, DTB index 0, DTBO index 2, eight CPU entries, and 3734384 kB `MemTotal`. Recovery reports `ro.boot.flash.locked=0` and orange verified-boot state. Its build fingerprint indicates Android 11 while release/SDK say 16/36; the backed-up active-slot boot header independently encodes Android 16.0.0 / 2025-08, but the installed system build ID still needs verification. No partition was written. A read-only backup of `super`, both `boot`/`dtbo`/`vbmeta`/`recovery` slots now exists outside Git; hashes and exact sizes have been verified. It excludes personal `userdata` and radio calibration partitions, which remain untouched.
 
-The backed-up `boot_b` uses Android boot header v2 with 4096-byte pages and an embedded DTB. This confirms only the image format and component sizes; the DTBO overlay still needs to be decoded and matched to the selected index.
+The backed-up `boot_b` uses Android boot header v2 with 4096-byte pages and an embedded DTB. The backed-up `dtbo_b` contains three entries. Recovery reports applied index 2 (zero-based); that entry carries board ID `0x49`, revision `0xc0`, and contains the TXD FT8756 1080 × 2400 video-panel configuration. This matches the panel identified in the live device-tree inventory, but the overlay's presence does not establish that an iOS display driver can use it.
 
 The sanitized hardware and recovery observations are also recorded in [`boards/odessa/profile.json`](boards/odessa/profile.json). This profile deliberately does not feed the inherited SWEET generators: reserved-memory ownership, boot handoff, and board-specific initialization still need verification first.
 
@@ -36,7 +36,7 @@ Compare the Odessa device tree and stock images against every hardware assumptio
 ## Phase 2 — Understand the Motorola boot chain
 
 - [x] Unpack the backed-up active-slot boot image and identify its Android boot header version, page size, kernel/ramdisk/DTB layout, and command line.
-- [ ] Inspect DTBO selection and the active A/B slot behavior.
+- [x] Inspect the active slot and match the bootloader-reported DTBO index to the backed-up overlay table.
 - [ ] Determine which boot-image packaging and signature/verification constraints apply to temporary fastboot boot.
 - [ ] Adapt the build scripts to consume the Odessa stock DTB and emit a correctly structured diagnostic image.
 - [ ] Add host-side parsing checks that compare the generated image components with the intended inputs.
