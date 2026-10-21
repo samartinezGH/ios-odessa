@@ -102,6 +102,33 @@ new file mode 100644
 +
 +#endif /* ! _PEXPERT_ARM64_ODESSA_H */
 
+diff --git a/osfmk/arm64/proc_reg.h b/osfmk/arm64/proc_reg.h
+--- a/osfmk/arm64/proc_reg.h
++++ b/osfmk/arm64/proc_reg.h
+@@ -213,14 +213,22 @@
+ /* D-Cache. */
+ #define MMU_CLINE   6
+ 
+ #elif defined (SWEET) /* Qualcomm Kryo 470: Cortex-A76 + Cortex-A55 */
+ 
+ /* I-Cache. */
+ #define MMU_I_CLINE 6
+ 
+ /* D-Cache. */
+ #define MMU_CLINE   6
+ 
++#elif defined (ODESSA) /* Qualcomm Kryo 470 cores */
++
++/* I-Cache. */
++#define MMU_I_CLINE 6
++
++/* D-Cache. */
++#define MMU_CLINE   6
++
+ #elif defined (VMAPPLE)
+ 
+ /* I-Cache. */
+
 diff --git a/config/MASTER.arm64.odessa b/config/MASTER.arm64.odessa
 new file mode 100644
 --- /dev/null
