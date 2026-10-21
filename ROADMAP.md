@@ -68,10 +68,10 @@ Compare the Odessa device tree and stock images against every hardware assumptio
 
 ## Phase 4 — Bring up XNU on Odessa
 
-- [ ] Define a distinct ODESSA machine configuration while retaining SWEET as a separate upstream target.
+- [x] Define a distinct ODESSA machine configuration while retaining SWEET as a separate upstream target.
 - [x] Add an isolated ODESSA machine-config scaffold in `xnu/patches/0082-odessa-machine-config.patch`, without enabling Sweet-only hardware behavior.
 - [x] Record the initial XNU port boundary and target-specific bring-up order in [`xnu/ODESSA_PORTING.md`](xnu/ODESSA_PORTING.md).
-- [ ] Build the scaffold with `MACHINE_CONFIG=ODESSA` in CI and resolve all compile/configuration failures.
+- [x] Build the scaffold with `MACHINE_CONFIG=ODESSA` in CI and resolve all compile/configuration failures.
 - [ ] Adapt the boot arguments, Apple Device Tree generation, and boot_args memory/video fields to the verified Motorola boot handoff.
 - [ ] Verify one CPU first: exception vectors, MMU, 16K page support, timer interrupts, GIC group/routing, and PSCI SMC calls.
 - [ ] Bring up additional CPUs only after CPU identity, cluster topology, and CPU_ON behavior are verified.
@@ -79,6 +79,8 @@ Compare the Odessa device tree and stock images against every hardware assumptio
 - [ ] Keep QEMU regression checks for generic XNU and loader behavior; treat QEMU as insufficient evidence for Motorola hardware.
 
 **Acceptance:** an Odessa-configured kernel reaches a stable diagnostic console and reports CPU, memory, timer, and interrupt state without mounting or writing a device partition.
+
+**Compile-only milestone (2026-10-21):** GitHub Actions run [39644845368](https://github.com/samartinezGH/ios-odessa/actions/runs/39644845368) successfully built and linked the `DEVELOPMENT_ARM64_ODESSA` kernel from XNU 8796.141.3. The `xnu-kernel` artifact contains `kernel.development.odessa` (Mach-O arm64, 16,490,008 bytes; SHA-256 `03c3aef448ef889c12b2a2536a888204782a0e2c87d099cf0c315dea644aac38`). This verifies compile/link only. Odessa ADT generation, safe RAM ownership, XNU boot_args, GIC/timer initialization, PSCI startup, and the XNU loader handoff remain unimplemented or unverified; no XNU boot image was produced or tested.
 
 ## Phase 5 — Add storage and a minimal root safely
 

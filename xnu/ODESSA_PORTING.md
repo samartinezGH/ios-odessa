@@ -1,8 +1,8 @@
 # Odessa XNU bring-up notes
 
-This file tracks the first target-specific XNU work for the Moto G9 Plus
-(XT2087-1). It is an engineering note, not a claim that an Odessa kernel can
-already be built or booted.
+This file tracks the target-specific XNU work for the Moto G9 Plus
+(XT2087-1). The current kernel has passed a CI compile and link; it has not
+been configured as a safe, bootable Odessa image or tested on the phone.
 
 ## Target facts
 
@@ -58,9 +58,44 @@ otherwise verified. The existing Sweet configuration remains unchanged.
 
 ## Current gate
 
-An initial isolated `ODESSA` machine configuration is now represented by
-`xnu/patches/0082-odessa-machine-config.patch`. It is an unbuilt scaffold:
-there is no Odessa platform expert, XNU kernel artifact, or XNU boot test yet.
-The current phone image is a diagnostic shim only. The next milestone is a CI
-build with `MACHINE_CONFIG=ODESSA`, then fixes based on its build log; no device
-boot or storage write is part of that milestone.
+An initial isolated `ODESSA` machine configuration is represented by
+`xnu/patches/0082-odessa-machine-config.patch`. CI run
+[39644845368](https://github.com/samartinezGH/ios-odessa/actions/runs/39644845368)
+successfully compiled and linked `kernel.development.odessa` for XNU
+8796.141.3. This establishes a compile scaffold only. The current Android boot
+image contains a dedicated diagnostic shim, not the XNU loader; the existing
+SWEET ADT generator and loader must not be reused for Odessa without replacing
+their device-specific assumptions.
+
+The next engineering gate is to implement an Odessa-specific ADT and loader
+handoff with a RAM map that excludes all reserved regions, then verify XNU's
+boot arguments and early CPU/MMU path. GIC interrupt routing, timer delivery,
+and PSCI behavior remain disabled or unverified. Do not package the current
+kernel as if it were bootable, and do not test it on the phone until this gate
+is met.
+
+## Audit findings for the first Odessa handoff
+
+The inherited `tools/mkadt.py` and `shim/loader.c` are not suitable starting
+inputs for a device image without substantial replacement:
+
+- `mkadt.py --highmem` describes one contiguous range of `0x100000000` to
+  `0x1fcc00000` (4.18 GiB). The sanitized Odessa profile observes a range of
+  `0x100000000` to `0x17dd00000` (~1.96 GiB), before reservations. The low
+  bank also has numerous secure, modem, multimedia, and splash carve-outs.
+- The generator advertises Sweet identity, CPU topology, display, and boot
+  values, including a synthetic Sweet ECID. Those values are not Odessa
+  platform data. The shared GIC/UFS addresses alone do not make the ADT valid.
+- `loader.c` accepts only a `SWEETXNU` payload and writes SWEET framebuffer
+  constants into XNU `boot_args`. The current build excludes this loader; the
+  compiled artifact remains the separate audit shim, not XNU.
+- The stock boot DTB gives a complex `/reserved-memory` map, while the current
+  unprivileged Android ADB session cannot export the live tree. Do not derive
+  a contiguous XNU RAM map by subtracting only the obvious fixed carve-outs;
+  dynamic pools and ownership by ABL/secure firmware also matter.
+
+The next host-side implementation should begin with an Odessa-specific
+evidence-driven memory/ADT parser and explicit refusal to emit an XNU payload
+while required reservations or boot handoff fields are unresolved. A working
+image still depends on validated boot arguments, early MMU/CPU startup, GIC,
+timer, and PSCI behavior. No new image was built or booted in this audit.

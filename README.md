@@ -37,10 +37,10 @@ The backed-up active-slot `boot_b` has Android boot header v2, 4096-byte pages, 
 The helper accepts the base DTB extracted from the same Moto G9 Plus stock boot image. Set `ODESSA_DTB` to that file before building; the default `../dtb/boot_unpacked/dtb` is only a conventional local path and is not included in Git. Keep the stock image and extracted DTB outside the repository. When no XNU payload is supplied, it creates a deterministic gzip-compressed `newc` root ramdisk. After packaging, the build checks the Android header and compares the embedded kernel, ramdisk, and DTB byte-for-byte with the inputs. Repeated builds with the same toolchain and inputs have been verified byte-for-byte on the development Mac. For example:
 
 ```sh
-CROSS_COMPILE=/path/to/aarch64-none-elf/bin/aarch64-none-elf- \\
-CC=clang TARGET_FLAGS="-target aarch64-none-elf" \\
-MKBOOTIMG=/path/to/mkbootimg.py \\
-ODESSA_DTB=/path/to/odessa/boot_b-unpacked/dtb \\
+CROSS_COMPILE=/path/to/aarch64-none-elf/bin/aarch64-none-elf- \
+CC=clang TARGET_FLAGS="-target aarch64-none-elf" \
+MKBOOTIMG=/path/to/mkbootimg.py \
+ODESSA_DTB=/path/to/odessa/boot_b-unpacked/dtb \
 shim/build.sh
 ```
 
@@ -53,16 +53,16 @@ The build compiles a dedicated `shim/odessa_audit.c` entry point with startup an
 | Fork and target identification | Complete |
 | Read-only hardware inventory | Started; sanitized facts are recorded above |
 | Odessa audit shim and boot-image packaging | Host diagnostic builds and validates; one approved temporary boot was accepted by fastboot, but the screen result is unconfirmed and ABL handoff/framebuffer layout remain unverified |
-| Odessa XNU machine configuration | Not implemented |
+| Odessa XNU machine configuration | Experimental ODESSA config compiles and links in CI; hardware startup is not implemented |
 | iOS root image for Odessa | Not built |
-| XNU kernel boot on the Moto G9 Plus | Not tested (only the diagnostic shim was temporarily loaded) |
+| XNU kernel boot on the Moto G9 Plus | Not tested; only the ODESSA kernel compile and the separate diagnostic shim have been built |
 | iOS userspace on the Moto G9 Plus | Not tested |
 
 The successful iOS home-screen milestone described by the upstream project applies to the Redmi Note 10 Pro only. It is not evidence that this fork boots on Odessa.
 
 ## Porting roadmap
 
-See [ROADMAP.md](ROADMAP.md) for the staged work, dependencies, and acceptance criteria.
+See [`ROADMAP.md`](ROADMAP.md) for the staged work, dependencies, and acceptance criteria.
 
 The existing shim, XNU patch series, device-tree generator, and hardware drivers are inherited SWEET-target work. Reuse them only after checking their assumptions against the Odessa hardware. In particular, the current shim and generator contain SWEET-specific MMIO addresses, memory ranges, CPU topology, touchscreen, panel, and boot-image assumptions.
 
