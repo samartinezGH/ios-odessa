@@ -46,20 +46,20 @@ Compare the Odessa device tree and stock images against every hardware assumptio
 
 **Acceptance:** a generated image can be unpacked and all component offsets, sizes, DTB contents, and boot arguments match expectations. No image is flashed.
 
-**Host-only packaging check (2026-10-21):** the generated boot header and component offsets were parsed and the kernel, ramdisk, and DTB were each compared byte-for-byte against their inputs. The smoke image is not an Odessa diagnostic executable: inherited SWEET MMIO and reset behavior remain unverified, so it must not be booted. Temporary-boot support and the Odessa-specific shim are still open.
+**Host-only packaging check (2026-10-21):** an initial smoke image's boot header and components were parsed and compared byte-for-byte against the intended inputs; that older image included inherited SWEET code and must not be booted. A later dedicated Odessa CPU/DTB diagnostic is built and validated separately, but its ABL entry-state and framebuffer assumptions still need device verification.
 
 ## Phase 3 — Make the shim target-aware
 
-- [x] Disable inherited loader, UFS, MMU benchmark, GIC, PSCI, and automatic-reset calls from the current shim entry point; retain this only as a host-reviewed audit baseline.
+- [x] Build a dedicated audit entry point that excludes inherited loader, UFS, MMU, GIC, PSCI, and reset probes; hold unexpected secondary CPUs in a WFE loop.
 - [ ] Replace hard-coded SWEET framebuffer, GIC, UFS, reset, and memory values with an Odessa board profile or verified live-tree discovery.
 - [ ] Keep register access read-only until each writable register and its required power/clock state are understood.
 - [ ] Add a compact framebuffer diagnostic for exceptions and a persistent or host-readable log path.
 - [ ] Confirm the shim's MMU mappings do not overlap secure memory or reserved carve-outs.
-- [ ] Build and inspect the shim on the host; run its existing host-render checks.
+- [x] Build and inspect the audit image on the host; run its host-render and package-component checks.
 
 **Acceptance:** the shim builds reproducibly for the Odessa profile and its host-side checks pass. It has not altered storage or boot partitions.
 
-**Audit baseline (2026-10-21):** the entry point reports CPU registers and waits without entering inherited hardware tests; exception handling also no longer invokes the inherited reset routine. The current framebuffer write still relies on unverified pixel format/stride, and legacy test routines remain in the source; the image is not cleared for device boot.
+**Audit baseline (2026-10-21):** the build now compiles a dedicated Odessa entry point, startup, and console only. Unexpected secondary CPUs wait in an assembly WFE loop; no inherited hardware tests or SMC calls are included. The diagnostic still writes to the reserved splash area using an unverified pixel format/stride, and its ABL entry-state assumptions are not verified on this phone; the image is not cleared for device boot.
 
 ## Phase 4 — Bring up XNU on Odessa
 
