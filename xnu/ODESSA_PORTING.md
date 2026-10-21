@@ -63,15 +63,20 @@ An initial isolated `ODESSA` machine configuration is represented by
 [39644845368](https://github.com/samartinezGH/ios-odessa/actions/runs/39644845368)
 successfully compiled and linked `kernel.development.odessa` for XNU
 8796.141.3. This establishes a compile scaffold only. The current Android boot
-image contains a dedicated diagnostic shim, not the XNU loader; the existing
-SWEET ADT generator and loader must not be reused for Odessa without replacing
-their device-specific assumptions.
+host candidate contains a separate Odessa XNU handoff loader, but no successful
+device entry has been observed. The existing SWEET ADT generator and loader
+must not be reused for Odessa without replacing their device-specific
+assumptions.
 
 An initial host-only Odessa ADT and XNU loader candidate now exist. The ADT
 uses a live-FDT-derived upper RAM bank that does not overlap fixed reservations
 or dynamic allocation ranges; the loader accepts an Odessa-specific payload,
-checks payload bounds, and leaves video disabled. This is a first handoff
-scaffold, not validated boot code.
+checks payload bounds, and leaves video disabled. It carries the diagnostic
+arguments `-v debug=0x14e cpus=1 keepsyms=1`; `shim/build_odessa_xnu.sh` accepts
+an override through `XNU_CMDLINE`. No root-device argument is configured: the
+Odessa kernel has no storage driver yet, and `rd=ufsroot0` would select a
+Sweet-only device. This is a first handoff scaffold, not validated boot code
+or an iOS installer.
 
 ## Audit findings for the first Odessa handoff
 
@@ -85,17 +90,18 @@ inputs for a device image without substantial replacement:
 - The generator advertises Sweet identity, CPU topology, display, and boot
   values, including a synthetic Sweet ECID. Those values are not Odessa
   platform data. The shared GIC/UFS addresses alone do not make the ADT valid.
-- `loader.c` accepts only a `SWEETXNU` payload and writes SWEET framebuffer
-  constants into XNU `boot_args`. The current build excludes this loader; the
-  compiled artifact remains the separate audit shim, not XNU.
-- The stock boot DTB gives a complex `/reserved-memory` map, while the current
-  unprivileged Android ADB session cannot export the live tree. Do not derive
-  a contiguous XNU RAM map by subtracting only the obvious fixed carve-outs;
-  dynamic pools and ownership by ABL/secure firmware also matter.
+- `shim/loader.c` still has a SWEET path and hard-coded SWEET video values; the
+  separate Odessa build selects `ODESSAXN`, omits video boot arguments, and
+  bounds-checks its payload. The XNU entry contract remains unverified.
+- The stock boot DTB gives a complex `/reserved-memory` map. A live FDT was
+  captured read-only; use its reservation and allocation ranges, and do not
+  derive a contiguous XNU RAM map by subtracting only obvious fixed carve-outs.
+  Bootloader and secure-firmware ownership also matter.
 
 The next engineering gate is observable, controlled XNU entry: verify the
-ABL handoff contract and XNU boot arguments, add a safe diagnostic path, then
+ABL handoff contract and boot arguments, add a safe diagnostic path, then
 validate early MMU/CPU startup, GIC interrupt routing, timer delivery, and
-PSCI behavior. The current candidate has no console and no root-storage path,
-so it cannot confirm successful XNU entry or launch iOS. It has not been
-booted on the phone.
+PSCI behavior. The current candidate has no console or root-storage path, so
+it cannot confirm successful XNU entry or launch iOS. It has not been booted on
+the phone. Do not attempt installation until a reviewed image has a verified
+entry path and a root device that XNU can read.
