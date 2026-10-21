@@ -64,7 +64,7 @@ new file mode 100644
 + * Initial board configuration for Motorola Moto G9 Plus (XT2087-1,
 + * Qualcomm SM7150-AB / Snapdragon 730G). This deliberately contains only
 + * architectural facts. GIC routing, timer INTID, memory ownership, and PSCI
-+ * startup policy remain disabled until verified for this board.
++ * startup policy remain disabled until verified; this remains a compile scaffold.
 + */
 +#ifndef _PEXPERT_ARM64_ODESSA_H
 +#define _PEXPERT_ARM64_ODESSA_H
