@@ -43,6 +43,32 @@
       "controller_base": "0x00a80000"
     }
   },
+  "cpu_topology_observations": {
+    "source": "Read-only ADB /proc/cpuinfo and /sys/devices/system/cpu on Android, 2026-10-21",
+    "groups": [
+      {
+        "cpus": "0-5",
+        "core_siblings_list": "0-5",
+        "midr_el1": "0x51df805e",
+        "cpu_implementer": "0x51",
+        "cpu_part": "0x805",
+        "cpu_capacity": 492
+      },
+      {
+        "cpus": "6-7",
+        "core_siblings_list": "6-7",
+        "midr_el1": "0x51df804e",
+        "cpu_implementer": "0x51",
+        "cpu_part": "0x804",
+        "cpu_capacity": 1024
+      }
+    ],
+    "features_reported_by_proc_cpuinfo": [
+      "fp", "asimd", "aes", "pmull", "sha1", "sha2", "crc32", "atomics",
+      "fphp", "asimdhp", "cpuid", "asimdrdm", "lrcpc", "dcpop", "asimddp"
+    ],
+    "note": "These are observations from the running Android kernel. They establish two CPU sibling groups and the listed features; they do not verify XNU startup, timer routing, or PSCI CPU_ON behavior."
+  },
   "recovery_snapshot": {
     "captured": "2026-10-21",
     "recovery_environment": {
@@ -76,6 +102,21 @@
       "note": "The active recovery scanout is a separate runtime allocation. Its XB24 format and 4352-byte pitch do not establish the bootloader splash buffer layout in cont_splash_region."
     },
     "note": "Recovery properties disagree on Android release and SDK. The boot header encodes Android 16.0.0 / 2025-08, but the installed system build ID still needs verification."
+  },
+  "normal_boot_snapshot": {
+    "captured": "2026-10-21",
+    "source": "Read-only ADB properties from the running Android system",
+    "product_device": "odessa",
+    "product_model": "moto g(9) plus",
+    "active_slot": "_b",
+    "android_release": "16",
+    "sdk": 36,
+    "build_id": "BP2A.250605.031.A2",
+    "build_incremental": "1754765312",
+    "security_patch": "2025-08-01",
+    "display_id": "infinity_odessa-userdebug 16 BP2A.250605.031.A2 eng.androi.20250809.184834 release-keys",
+    "fingerprint": "motorola/odessa_retail/odessa:11/RPAS31.Q2-59-17-4-5-5/af8e3:user/release-keys",
+    "note": "The fingerprint reports Android 11 while the release, SDK, and display ID report Android 16. The exact installed firmware identity remains inconsistent and should not be inferred from any single property."
   },
   "stock_boot_b_observation": {
     "source": "Read-only backup of /dev/block/by-name/boot_b; parsed locally",

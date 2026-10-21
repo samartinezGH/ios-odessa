@@ -39,14 +39,19 @@ Compare the Odessa device tree and stock images against every hardware assumptio
 
 - [x] Unpack the backed-up active-slot boot image and identify its Android boot header version, page size, kernel/ramdisk/DTB layout, and command line.
 - [x] Inspect the active slot and match the bootloader-reported DTBO index to the backed-up overlay table.
-- [ ] Determine which boot-image packaging and signature/verification constraints apply to temporary fastboot boot.
+- [x] Determine which boot-image packaging and signature/verification constraints apply to temporary fastboot boot.
 - [x] Adapt the build helper to accept the Odessa stock DTB explicitly and fail early when required toolchain inputs are missing.
 - [x] Emit and inspect a host-only packaging smoke image with the verified Odessa DTB and boot metadata; this image still contains unverified SWEET code and is not for device boot.
 - [x] Add host-side parsing checks that compare the generated image components with the intended inputs byte-for-byte.
+- [x] Make the empty diagnostic ramdisk deterministic so repeated builds with identical inputs produce the same image.
 
 **Acceptance:** a generated image can be unpacked and all component offsets, sizes, DTB contents, and boot arguments match expectations. No image is flashed.
 
 **Host-only packaging check (2026-10-21):** an initial smoke image's boot header and components were parsed and compared byte-for-byte against the intended inputs; that older image included inherited SWEET code and must not be booted. A later dedicated Odessa CPU/DTB diagnostic is built and validated separately, but its ABL entry-state and framebuffer assumptions still need device verification.
+
+**Temporary boot check (2026-10-21):** after explicit approval, ABL accepted the inspected 446,464-byte diagnostic with `fastboot boot` and returned `OKAY`; no partition was written. The user clarified that the bootloader menu remained on **START**, which led to a normal Android startup; no diagnostic screen was observed. A subsequent read-only ADB check found Android 16 / SDK 36, active slot `_b`, and build display ID `infinity_odessa-userdebug 16 BP2A.250605.031.A2 eng.androi.20250809.184834 release-keys`; the reported fingerprint says Android 11 and remains inconsistent. The result does not confirm that the shim ran correctly; ABL handoff and framebuffer remain unresolved. The current rebuild is a different artifact and is not covered by the one-time approval.
+
+**Reproducible host build (2026-10-21):** the generated empty `newc` ramdisk now uses fixed metadata and a normalized gzip header. Two consecutive builds with the same inputs produced identical kernel, ramdisk, and boot-image hashes. The image remains a diagnostic artifact and requires a new review/approval before any further device test.
 
 ## Phase 3 — Make the shim target-aware
 
@@ -59,11 +64,14 @@ Compare the Odessa device tree and stock images against every hardware assumptio
 
 **Acceptance:** the shim builds reproducibly for the Odessa profile and its host-side checks pass. It has not altered storage or boot partitions.
 
-**Audit baseline (2026-10-21):** the build now compiles a dedicated Odessa entry point, startup, and console only. Unexpected secondary CPUs wait in an assembly WFE loop; no inherited hardware tests or SMC calls are included. The diagnostic still writes to the reserved splash area using an unverified pixel format/stride, and its ABL entry-state assumptions are not verified on this phone; the image is not cleared for device boot.
+**Audit baseline (2026-10-21):** the build now compiles a dedicated Odessa entry point, startup, and console only. Unexpected secondary CPUs wait in an assembly WFE loop; no inherited hardware tests or SMC calls are included. One user-approved temporary boot of the inspected image was accepted by fastboot without flashing partitions. The phone returned to Android normally, but the user did not observe the diagnostic screen. The shim still writes to the reserved splash area using an unverified pixel format/stride; ABL entry-state assumptions remain unverified. Any next device test needs review of the exact image and separate approval.
 
 ## Phase 4 — Bring up XNU on Odessa
 
 - [ ] Define a distinct ODESSA machine configuration while retaining SWEET as a separate upstream target.
+- [x] Add an isolated ODESSA machine-config scaffold in `xnu/patches/0082-odessa-machine-config.patch`, without enabling Sweet-only hardware behavior.
+- [x] Record the initial XNU port boundary and target-specific bring-up order in [`xnu/ODESSA_PORTING.md`](xnu/ODESSA_PORTING.md).
+- [ ] Build the scaffold with `MACHINE_CONFIG=ODESSA` in CI and resolve all compile/configuration failures.
 - [ ] Adapt the boot arguments, Apple Device Tree generation, and boot_args memory/video fields to the verified Motorola boot handoff.
 - [ ] Verify one CPU first: exception vectors, MMU, 16K page support, timer interrupts, GIC group/routing, and PSCI SMC calls.
 - [ ] Bring up additional CPUs only after CPU identity, cluster topology, and CPU_ON behavior are verified.
@@ -85,6 +93,7 @@ Compare the Odessa device tree and stock images against every hardware assumptio
 
 ## Phase 6 — Start the iOS 16 userland
 
+- [x] Acquire and inspect the iPhone X iOS 16.7.16 IPSW (build 20H392); its manifest supports iPhone10,3/iPhone10,6 and includes the D22AP tree. Keep firmware artifacts outside Git.
 - [ ] Reuse the iPhone X iOS 16.7.16 userland only after validating its architecture, cache, and platform assumptions on the Odessa kernel.
 - [ ] Build and inspect the root image entirely on the host; keep Apple firmware out of Git.
 - [ ] Bring up dyld, launchd, essential daemons, and crash/log collection in small steps.
@@ -122,6 +131,6 @@ Compare the Odessa device tree and stock images against every hardware assumptio
 
 ## Explicit safety gates
 
-- Do not run fastboot boot until a specific diagnostic image has been inspected and the user explicitly approves that device test.
+- Each device boot requires review of the exact diagnostic image and explicit approval; approval for an earlier image or one-time boot does not cover another test.
 - Do not run fastboot flash or write to userdata, boot, vendor_boot, dtbo, vbmeta, recovery, modem, or persist as part of routine port development.
 - Before any proposed write, state the exact partition, data loss, backup, and recovery path and obtain explicit approval.

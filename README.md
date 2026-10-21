@@ -34,7 +34,7 @@ The backed-up active-slot `boot_b` has Android boot header v2, 4096-byte pages, 
 
 `shim/build.sh` uses an AArch64 bare-metal ELF cross-toolchain (`aarch64-none-elf-`) and Android's `mkbootimg` utility. On an Intel Mac, select Arm's `darwin-x86_64` host package and `aarch64-none-elf` target; newer releases may only offer Apple silicon packages, so check the host architecture listed for the selected release. Set `CROSS_COMPILE` to the toolchain's binary prefix and `MKBOOTIMG` to the Android `mkbootimg` executable or script. If the Intel-hosted GCC binary requires a missing Homebrew runtime library, Xcode Clang can compile the freestanding sources with `CC=clang TARGET_FLAGS="-target aarch64-none-elf"`; the cross toolchain's GNU linker and binutils remain in use.
 
-The helper accepts the base DTB extracted from the same Moto G9 Plus stock boot image. Set `ODESSA_DTB` to that file before building; the default `../dtb/boot_unpacked/dtb` is only a conventional local path and is not included in Git. Keep the stock image and extracted DTB outside the repository. After packaging, the build checks the Android header and compares the embedded kernel, ramdisk, and DTB byte-for-byte with the inputs. For example:
+The helper accepts the base DTB extracted from the same Moto G9 Plus stock boot image. Set `ODESSA_DTB` to that file before building; the default `../dtb/boot_unpacked/dtb` is only a conventional local path and is not included in Git. Keep the stock image and extracted DTB outside the repository. When no XNU payload is supplied, it creates a deterministic gzip-compressed `newc` root ramdisk. After packaging, the build checks the Android header and compares the embedded kernel, ramdisk, and DTB byte-for-byte with the inputs. Repeated builds with the same toolchain and inputs have been verified byte-for-byte on the development Mac. For example:
 
 ```sh
 CROSS_COMPILE=/path/to/aarch64-none-elf/bin/aarch64-none-elf- \\
@@ -44,7 +44,7 @@ ODESSA_DTB=/path/to/odessa/boot_b-unpacked/dtb \\
 shim/build.sh
 ```
 
-The build compiles a dedicated `shim/odessa_audit.c` entry point with startup and console code only; it does not compile the inherited UFS, MMU, loader, or GIC probe files. Unexpected secondary CPUs wait without MMIO or PSCI calls, and the build rejects retained hardware-probe symbols or SMC instructions. The diagnostic still writes to a framebuffer using an unverified candidate format and stride, and its assumed ABL entry state is not yet verified on Odessa. A successful build only checks compilation and boot-image packaging on the host; it does not establish device compatibility. The output is not approved for device boot until the user reviews the specific image.
+The build compiles a dedicated `shim/odessa_audit.c` entry point with startup and console code only; it does not compile the inherited UFS, MMU, loader, or GIC probe files. Unexpected secondary CPUs wait without MMIO or PSCI calls, and the build rejects retained hardware-probe symbols or SMC instructions. The diagnostic still writes to a framebuffer using an unverified candidate format and stride, and its assumed ABL entry state is not yet verified on Odessa. A successful build only checks compilation and boot-image packaging on the host; it does not establish device compatibility. One user-approved temporary boot of the inspected image was accepted by fastboot. The user later clarified that the bootloader menu remained on **START**, so Android booted normally; no diagnostic screen was observed. A subsequent read-only ADB check confirmed Android 16 / SDK 36, active slot `_b`, and build display ID `infinity_odessa-userdebug 16 BP2A.250605.031.A2 eng.androi.20250809.184834 release-keys`. Its fingerprint reports Android 11, so the firmware identity is still internally inconsistent. This does not confirm that the shim ran correctly or that XNU can boot.
 
 ## Current status
 
@@ -52,10 +52,10 @@ The build compiles a dedicated `shim/odessa_audit.c` entry point with startup an
 | --- | --- |
 | Fork and target identification | Complete |
 | Read-only hardware inventory | Started; sanitized facts are recorded above |
-| Odessa audit shim and boot-image packaging | Host diagnostic builds and validates, but the ABL handoff and framebuffer layout are unverified; no device boot test has been run |
+| Odessa audit shim and boot-image packaging | Host diagnostic builds and validates; one approved temporary boot was accepted by fastboot, but the screen result is unconfirmed and ABL handoff/framebuffer layout remain unverified |
 | Odessa XNU machine configuration | Not implemented |
 | iOS root image for Odessa | Not built |
-| Kernel boot on the Moto G9 Plus | Not tested |
+| XNU kernel boot on the Moto G9 Plus | Not tested (only the diagnostic shim was temporarily loaded) |
 | iOS userspace on the Moto G9 Plus | Not tested |
 
 The successful iOS home-screen milestone described by the upstream project applies to the Redmi Note 10 Pro only. It is not evidence that this fork boots on Odessa.
@@ -94,4 +94,4 @@ Use English for documentation, code comments, commit messages, and build instruc
 
 ## Upstream and firmware
 
-This fork is based on [dipa-studio/ios-sweet](https://github.com/dipa-studio/ios-sweet). Apple's iOS firmware is not included; distribute or use it only in accordance with Apple's terms. This project is an experimental research port, not a secure or production-ready phone operating system.
+This fork is based on [dipa-studio/ios-sweet](https://github.com/dipa-studio/ios-sweet). Apple's iOS firmware is not included; distribute or use it only in accordance with Apple's terms. The local research input is the iPhone X IPSW for iOS 16.7.16 (build 20H392, D22AP); it supplies iOS userland and Apple device-tree reference material, not a Motorola boot image. Its contents and generated root images stay outside Git. This project is an experimental research port, not a secure or production-ready phone operating system.

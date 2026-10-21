@@ -23,7 +23,7 @@ require_tool() {
 	}
 }
 
-for tool in "$CC" "$LD" "$OBJCOPY" "$READELF" "$NM" "$OBJDUMP" "$MKBOOTIMG" python3 gcc awk grep cpio gzip truncate; do
+for tool in "$CC" "$LD" "$OBJCOPY" "$READELF" "$NM" "$OBJDUMP" "$MKBOOTIMG" python3 gcc awk grep truncate; do
 	require_tool "$tool"
 done
 [ -f "$ODESSA_DTB" ] || {
@@ -62,7 +62,7 @@ truncate -s "$size" out/Image
 if [ -n "${1:-}" ]; then
 	cp "$1" out/ramdisk.bin
 else
-	(cd out && rm -rf rd && mkdir rd && cd rd && find . | cpio -o -H newc --quiet | gzip -9 > ../ramdisk.bin)
+	python3 ../tools/mkemptyramdisk.py out/ramdisk.bin
 fi
 "$MKBOOTIMG" --header_version 2 --kernel out/Image --ramdisk out/ramdisk.bin \
 	--dtb "$ODESSA_DTB" --base 0 --kernel_offset 0x8000 --ramdisk_offset 0x1000000 \
