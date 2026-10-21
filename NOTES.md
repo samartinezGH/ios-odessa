@@ -1,4 +1,32 @@
-# iOS 16 on sweet (Redmi Note 10 Pro, SM7150) - working notes
+# iOS 16 on the Motorola Moto G9 Plus (odessa) — working notes
+
+## Active Odessa handoff — 2026-10-21
+
+### Current state
+
+- The public fork is `samartinezGH/ios-odessa`, based on `dipa-studio/ios-sweet`.
+- Target: Motorola Moto G9 Plus, variant XT2087-1, device-tree model `odessa`, Qualcomm platform string `qcom,sdmmagpie`.
+- A saved live device-tree dump identifies eight CPU nodes and PSCI through SMC; RAM at `0x80000000` and `0x100000000` before reserved-memory carve-outs; GICv3 at `0x17a00000` / `0x17a60000`; UFS at `0x1d84000`; a 1080 × 2400 TXD FT8756 panel; and FT8756 touch over GENI SPI QUP SE6 at `0xa80000`.
+- These are inventory observations only. The inherited SWEET shim, XNU patches, device tree, and boot images have not been validated on Odessa.
+- No Odessa-specific shim or XNU configuration has been implemented, built, or booted. No iOS root image has been prepared for this phone.
+- Raw device-tree and audit files remain outside Git because they contain device-specific identifiers and network data.
+
+### Next concrete action
+
+Compare all hardware addresses and boot assumptions in `shim/`, `tools/mkadt.py`, and the XNU patch series against the sanitized Odessa inventory. First document the stock boot image, DTBO selection, firmware build, and A/B layout from read-only sources; do not infer them from Redmi images.
+
+### Safety and evidence
+
+- Do not use an inherited SWEET image on the Moto G9 Plus.
+- Keep initial work host-side and read-only on the phone. Do not run `fastboot boot` until a specific inspected diagnostic image is ready and the user approves that boot.
+- Do not write phone partitions without a verified backup and a separate, explicit approval.
+- Keep device dumps, serials, MAC addresses, partition images, and Apple firmware out of Git.
+- Mark every result as observed, inferred, or unverified. This handoff is for Odessa; the notes below are inherited SWEET history and are not current Odessa results.
+
+---
+
+## Historical SWEET notes (Redmi Note 10 Pro, SM7150)
+
 
 ## Agent handoff / active work (2026-10-15, latest)
 
