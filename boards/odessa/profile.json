@@ -21,7 +21,32 @@
       "distributor_base": "0x17a00000",
       "redistributor_base": "0x17a60000"
     },
-    "ufs_controller_base": "0x01d84000",
+    "ufs": {
+      "source": "Live device-tree dump captured 2026-10-20; sanitized summary",
+      "controller_compatible": "qcom,ufshc",
+      "controller_base": "0x01d84000",
+      "controller_size": "0x00030000",
+      "controller_status": "okay",
+      "controller_reg_names": ["ufs_mem", "ufs_ice"],
+      "phy_compatible": "qcom,ufs-phy-qmp-v3",
+      "phy_base": "0x01d87000",
+      "phy_size": "0x00000ddc",
+      "phy_status": "okay",
+      "phy_reg_names": ["phy_mem"],
+      "ice_compatible": "qcom,ice",
+      "ice_base": "0x01d90000",
+      "ice_size": "0x00008000",
+      "lanes_per_direction": 1,
+      "controller_clock_names": [
+        "core_clk", "bus_aggr_clk", "iface_clk", "core_clk_unipro",
+        "core_clk_ice", "ref_clk", "tx_lane0_sync_clk", "rx_lane0_sync_clk"
+      ],
+      "phy_clock_names": ["ref_clk_src", "ref_clk", "ref_aux_clk"],
+      "controller_reset_names": ["core_reset"],
+      "power_supplies_present": ["vdd-hba", "vcc", "vccq2", "vddp-ref-clk"],
+      "ice_clock_names": ["ufs_core_clk", "bus_clk", "iface_clk", "ice_core_clk"],
+      "note": "The live tree identifies resources, dependencies, and firmware-enabled status only. It does not establish XNU register sequencing, ICE keys/configuration, DMA constraints, safe ownership, or successful reads. Port the Linux/QCOM sequence before issuing any UFS command from XNU."
+    },
     "display": {
       "panel": "TXD FT8756",
       "width": 1080,
