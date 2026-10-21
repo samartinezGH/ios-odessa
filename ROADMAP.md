@@ -90,7 +90,7 @@ Compare the Odessa device tree and stock images against every hardware assumptio
 
 - [x] Inventory the Odessa UFSHCI, QMP PHY, ICE block, clocks, reset, regulators, and lane count from the live device tree.
 - [ ] Trace the matching Qualcomm UFSHCI/PHY initialization and resume sequence; do not issue commands until host ownership, DMA, and ICE behavior are understood.
-- [ ] Compile and review the experimental read-only UFS patch `xnu/patches/0083-odessa-readonly-ufs.patch`; it reuses ABL state and is not device-validated.
+- [x] Compile and review the experimental read-only UFS patch `xnu/patches/0083-odessa-readonly-ufs.patch`; CI linked it in run [39661560640](https://github.com/samartinezGH/ios-odessa/actions/runs/39661560640), but it is not device-validated.
 - [ ] Map the Motorola partition table and A/B slots from stock metadata; do not reuse Redmi partition indices.
 - [ ] Boot a RAM-disk test root before attempting any internal-storage root.
 - [ ] Add read-only UFS support and confirm block addresses against recovery/Android metadata.
