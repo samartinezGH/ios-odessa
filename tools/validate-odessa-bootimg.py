@@ -67,7 +67,7 @@ def main():
     require(cmdline == "console=null", f"unexpected boot command line: {cmdline!r}")
     print(f"[OK] boot.img v2 layout matches inputs: kernel={kernel_size}, ramdisk={ramdisk_size}, dtb={dtb_size} bytes")
     print("[OK] offsets, addresses, OS metadata, command line, and image size match the Odessa boot_b profile")
-    print("[INFO] This is a packaging check only; inherited SWEET code is not safe to boot on Odessa.")
+    print("[INFO] Packaging is verified only; the ABL handoff and framebuffer layout are unverified, so this image is not approved for device boot.")
 
 
 if __name__ == "__main__":
