@@ -1,5 +1,5 @@
 /*
- * Milestone 4: act as iBoot for xnu.
+ * Load a target-specific XNU payload prepared by tools/mkpayload.py.
  *
  * mkpayload.py already resolved the kernel's chained fixups and built the
  * ADT, so this only has to: find the payload in the ABL ramdisk, copy the
@@ -11,6 +11,7 @@
 #include "console.h"
 #include "fdt.h"
 #include "loader.h"
+#include <stddef.h>
 
 #define BOOT_LINE_LENGTH	608
 #define PAGE_16K		0x4000UL
@@ -65,9 +66,8 @@ static void zero64(uintptr_t dst, uint64_t n)
 		d[i] = 0;
 }
 
-static int magic_ok(const char *m)
+static int magic_is(const char *m, const char *want)
 {
-	static const char want[] = "SWEETXNU";
 	for (int i = 0; i < 8; i++)
 		if (m[i] != want[i])
 			return 0;
@@ -84,12 +84,35 @@ const char *loader_boot(uintptr_t dtb)
 	    !fdt_chosen_u64(dtb, "linux,initrd-end", &rd_end))
 		return "no initrd in /chosen";
 	con_hex2("INITRD", "lo=", rd_start, "hi=", rd_end);
+	if (rd_end <= rd_start || rd_end - rd_start < offsetof(struct payload, segs))
+		return "invalid initrd bounds";
 
 	const struct payload *p = (const struct payload *)rd_start;
-	if (!magic_ok(p->magic))
+	uint64_t payload_size = rd_end - rd_start;
+#ifdef ODESSA
+	if (!magic_is(p->magic, "ODESSAXN"))
+		return "no ODESSAXN payload";
+#else
+	if (!magic_is(p->magic, "SWEETXNU"))
 		return "no SWEETXNU payload";
-	if (p->version != 1 || (p->adt_off & 7) || (rd_start & 7))
+#endif
+	if (p->version != 1 || p->nsegs == 0 || p->nsegs > 128 ||
+	    (p->adt_off & 7) || (rd_start & 7))
 		return "bad payload header";
+	uint64_t seg_table_size = (uint64_t)p->nsegs * sizeof(struct payload_seg);
+	if (seg_table_size > payload_size - offsetof(struct payload, segs) ||
+	    p->adt_off < offsetof(struct payload, segs) + seg_table_size ||
+	    p->adt_size == 0 || p->adt_off > payload_size ||
+	    p->adt_size > payload_size - p->adt_off)
+		return "payload components out of bounds";
+	if (p->mem_size == 0 || p->phys_base + p->mem_size < p->phys_base ||
+	    p->kernel_end < p->virt_base ||
+	    p->kernel_end - p->virt_base > p->mem_size)
+		return "invalid XNU memory range";
+#ifdef ODESSA
+	if (p->phys_base < 0x100000000ULL)
+		return "Odessa requires validated high-memory range";
+#endif
 
 	uint64_t pa_of_va_base = p->phys_base - p->virt_base;	/* pa = va + this */
 	con_hex2("PHYS", "base=", p->phys_base, "size=", p->mem_size);
@@ -102,6 +125,11 @@ const char *loader_boot(uintptr_t dtb)
 
 	for (uint32_t i = 0; i < p->nsegs; i++) {
 		const struct payload_seg *s = &p->segs[i];
+		if (s->file_off < offsetof(struct payload, segs) + seg_table_size ||
+		    s->file_off > payload_size || s->file_size > payload_size - s->file_off ||
+		    s->vmaddr < p->virt_base || s->vmsize > p->mem_size ||
+		    s->vmaddr - p->virt_base > p->mem_size - s->vmsize)
+			return "kernel segment out of bounds";
 		uintptr_t dst = s->vmaddr + pa_of_va_base;
 		copy64(dst, rd_start + s->file_off, s->file_size);
 		if (s->vmsize > s->file_size)
@@ -111,6 +139,8 @@ const char *loader_boot(uintptr_t dtb)
 
 	/* ADT, then boot_args, behind the kernel; everything below topOfKernelData is ours. */
 	uintptr_t adt_pa = p->kernel_end + pa_of_va_base;
+	if (p->adt_size > p->mem_size - (p->kernel_end - p->virt_base))
+		return "ADT exceeds XNU memory range";
 	copy64(adt_pa, rd_start + p->adt_off, p->adt_size);
 	uintptr_t ba_pa = (adt_pa + p->adt_size + PAGE_16K - 1) & ~(PAGE_16K - 1);
 	uintptr_t top = ba_pa + PAGE_16K;
@@ -123,12 +153,14 @@ const char *loader_boot(uintptr_t dtb)
 	ba->physBase = p->phys_base;
 	ba->memSize = p->mem_size;
 	ba->topOfKernelData = top;
+#ifndef ODESSA
 	ba->Video.v_baseAddr = FB_BASE;
 	ba->Video.v_display = 1;
 	ba->Video.v_rowBytes = FB_STRIDE;
 	ba->Video.v_width = FB_W;
 	ba->Video.v_height = FB_H;
 	ba->Video.v_depth = 32;
+#endif
 	ba->deviceTreeP = adt_pa - pa_of_va_base;	/* xnu reads it with the MMU on: a VA */
 	ba->deviceTreeLength = (uint32_t)p->adt_size;
 	for (int i = 0; i < BOOT_LINE_LENGTH; i++)

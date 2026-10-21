@@ -73,6 +73,7 @@ Compare the Odessa device tree and stock images against every hardware assumptio
 - [x] Record the initial XNU port boundary and target-specific bring-up order in [`xnu/ODESSA_PORTING.md`](xnu/ODESSA_PORTING.md).
 - [x] Build the scaffold with `MACHINE_CONFIG=ODESSA` in CI and resolve all compile/configuration failures.
 - [ ] Adapt the boot arguments, Apple Device Tree generation, and boot_args memory/video fields to the verified Motorola boot handoff.
+- [x] Generate a host-only Odessa ADT and first XNU handoff image using the active FDT, conservative high-memory selection, separate payload magic, and video-disabled loader.
 - [ ] Verify one CPU first: exception vectors, MMU, 16K page support, timer interrupts, GIC group/routing, and PSCI SMC calls.
 - [ ] Bring up additional CPUs only after CPU identity, cluster topology, and CPU_ON behavior are verified.
 - [ ] Adapt or disable SWEET-only drivers and patches until their hardware assumptions are proven.
@@ -80,7 +81,9 @@ Compare the Odessa device tree and stock images against every hardware assumptio
 
 **Acceptance:** an Odessa-configured kernel reaches a stable diagnostic console and reports CPU, memory, timer, and interrupt state without mounting or writing a device partition.
 
-**Compile-only milestone (2026-10-21):** GitHub Actions run [39644845368](https://github.com/samartinezGH/ios-odessa/actions/runs/39644845368) successfully built and linked the `DEVELOPMENT_ARM64_ODESSA` kernel from XNU 8796.141.3. The `xnu-kernel` artifact contains `kernel.development.odessa` (Mach-O arm64, 16,490,008 bytes; SHA-256 `03c3aef448ef889c12b2a2536a888204782a0e2c87d099cf0c315dea644aac38`). This verifies compile/link only. Odessa ADT generation, safe RAM ownership, XNU boot_args, GIC/timer initialization, PSCI startup, and the XNU loader handoff remain unimplemented or unverified; no XNU boot image was produced or tested.
+**Compile-only milestone (2026-10-21):** GitHub Actions run [39644845368](https://github.com/samartinezGH/ios-odessa/actions/runs/39644845368) successfully built and linked the `DEVELOPMENT_ARM64_ODESSA` kernel from XNU 8796.141.3. The `xnu-kernel` artifact contains `kernel.development.odessa` (Mach-O arm64, 16,490,008 bytes; SHA-256 `03c3aef448ef889c12b2a2536a888204782a0e2c87d099cf0c315dea644aac38`). This verified compile/link only; the host handoff candidate and its remaining hardware/runtime blockers are documented below.
+
+**Host-only Odessa handoff candidate (2026-10-21):** captured the active FDT read-only from `/sys/firmware/fdt` with ADB root. It reports RAM banks `[0x80000000, 0x100000000)` and `[0x100000000, 0x17dd00000)`. All fixed reserved-memory ranges are below 4 GiB; dynamic reserved pools declare allocation ranges ending below 4 GiB. `tools/mkadt_odessa.py` therefore selects only the upper 0x7dd00000-byte bank for the candidate ADT, and refuses the stock boot DTB because its `/memory/reg` is unpopulated. The generated ADT records eight CPU MPIDRs, PSCI by SMC, GICv3 at `0x17a00000` / `0x17a60000`, virtual timer PPI 19, and 19.2 MHz timer frequency. `shim/build_odessa_xnu.sh` packages the CI kernel as an `ODESSAXN` payload behind a loader that bounds-checks segments and leaves the framebuffer disabled. The Android boot image passed byte-for-byte header/component validation and is 16,318,464 bytes (SHA-256 `7c19eb2794b3efeb6b11ab0ab24443c8227f4e7b9806d6972be75eab49bbbef4`). This is a host artifact only: it has not been booted, no console or root-storage path is enabled, and GIC/timer/PSCI and the ABL entry contract remain unverified. It is not an iOS image ready for device boot.
 
 ## Phase 5 — Add storage and a minimal root safely
 

@@ -67,12 +67,11 @@ image contains a dedicated diagnostic shim, not the XNU loader; the existing
 SWEET ADT generator and loader must not be reused for Odessa without replacing
 their device-specific assumptions.
 
-The next engineering gate is to implement an Odessa-specific ADT and loader
-handoff with a RAM map that excludes all reserved regions, then verify XNU's
-boot arguments and early CPU/MMU path. GIC interrupt routing, timer delivery,
-and PSCI behavior remain disabled or unverified. Do not package the current
-kernel as if it were bootable, and do not test it on the phone until this gate
-is met.
+An initial host-only Odessa ADT and XNU loader candidate now exist. The ADT
+uses a live-FDT-derived upper RAM bank that does not overlap fixed reservations
+or dynamic allocation ranges; the loader accepts an Odessa-specific payload,
+checks payload bounds, and leaves video disabled. This is a first handoff
+scaffold, not validated boot code.
 
 ## Audit findings for the first Odessa handoff
 
@@ -94,8 +93,9 @@ inputs for a device image without substantial replacement:
   a contiguous XNU RAM map by subtracting only the obvious fixed carve-outs;
   dynamic pools and ownership by ABL/secure firmware also matter.
 
-The next host-side implementation should begin with an Odessa-specific
-evidence-driven memory/ADT parser and explicit refusal to emit an XNU payload
-while required reservations or boot handoff fields are unresolved. A working
-image still depends on validated boot arguments, early MMU/CPU startup, GIC,
-timer, and PSCI behavior. No new image was built or booted in this audit.
+The next engineering gate is observable, controlled XNU entry: verify the
+ABL handoff contract and XNU boot arguments, add a safe diagnostic path, then
+validate early MMU/CPU startup, GIC interrupt routing, timer delivery, and
+PSCI behavior. The current candidate has no console and no root-storage path,
+so it cannot confirm successful XNU entry or launch iOS. It has not been
+booted on the phone.

@@ -9,7 +9,7 @@ kernelcaches itself, so the chains are walked here and every pointer is
 rewritten to its unslid target. The shim then only copies flat segments.
 
 Payload layout (little endian, all offsets from payload start):
-  0x000  char  magic[8] = "SWEETXNU"
+  0x000  char  magic[8] = "SWEETXNU" or "ODESSAXN" (selected by --target)
   0x008  u32   version = 1, nsegs
   0x010  u64   virt_base      kernel VA that maps to phys_base
   0x018  u64   entry_va       LC_UNIXTHREAD pc
@@ -140,7 +140,7 @@ def adt_dram(adt_blob):
             struct.unpack('<Q', chosen.prop('dram-size'))[0])
 
 
-def build(kernel_path, adt_path, cmdline, ramdisk_path=None):
+def build(kernel_path, adt_path, cmdline, ramdisk_path=None, target='SWEET'):
     buf = bytearray(open(kernel_path, 'rb').read())
     m = parse_macho(buf)
     nfix = apply_chained_fixups(buf, m)
@@ -154,7 +154,17 @@ def build(kernel_path, adt_path, cmdline, ramdisk_path=None):
     kernel_end = (kernel_end + PAGE - 1) & ~(PAGE - 1)
 
     adt_blob = open(adt_path, 'rb').read()
-    # The ADT decides where the kernel's RAM is (mkadt.py --highmem).
+    adt_root, _ = adt.parse(adt_blob)
+    root_compatible = adt_root.prop('compatible') or b''
+    if target == 'ODESSA':
+        if b'motorola,odessa\0' not in root_compatible or b'qcom,sdmmagpie\0' not in root_compatible:
+            raise ValueError('ODESSA payload requires an Odessa Apple Device Tree')
+        payload_magic = b'ODESSAXN'
+    elif target == 'SWEET':
+        payload_magic = b'SWEETXNU'
+    else:
+        raise ValueError(f'unsupported payload target {target}')
+    # The ADT decides where the kernel's RAM is.
     PHYS_BASE, MEM_SIZE = adt_dram(adt_blob)
     pieces = [(s['vmaddr'], s['vmsize'], buf[s['fileoff']:s['fileoff'] + s['filesize']]) for s in segs]
     ramdisk = None
@@ -180,7 +190,7 @@ def build(kernel_path, adt_path, cmdline, ramdisk_path=None):
     out += adt_blob
     out += b'\0' * (-len(out) & 0xf)
 
-    struct.pack_into('<8sII', out, 0, b'SWEETXNU', 1, len(pieces))
+    struct.pack_into('<8sII', out, 0, payload_magic, 1, len(pieces))
     struct.pack_into('<7Q', out, 0x10, virt_base, m['entry'], adt_off, len(adt_blob), kernel_end,
                      PHYS_BASE, MEM_SIZE)
     cl = cmdline.encode()[:BOOT_LINE_LENGTH - 1]
@@ -198,8 +208,13 @@ if __name__ == '__main__':
     ap.add_argument('kernel'); ap.add_argument('adt'); ap.add_argument('out')
     ap.add_argument('--cmdline', default='debug=0xc serial=3 cpus=1 keepsyms=1')
     ap.add_argument('--ramdisk', help='root image for md0 (boot with rd=md0)')
+    ap.add_argument('--target', choices=('SWEET', 'ODESSA'), default='SWEET',
+                    help='payload identity; ODESSA additionally checks the ADT target strings')
     a = ap.parse_args()
-    blob, info = build(a.kernel, a.adt, a.cmdline, a.ramdisk)
+    try:
+        blob, info = build(a.kernel, a.adt, a.cmdline, a.ramdisk, a.target)
+    except (ValueError, AssertionError, struct.error) as exc:
+        ap.error(str(exc))
     open(a.out, 'wb').write(blob)
     for k, v in info.items():
         if k != 'segs':
